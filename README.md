@@ -1,99 +1,155 @@
-# ISW2 - Sistema de apoyo para la gestión y seguimiento de incidentes de convivencia escolar
+# ISW2 - Sistema de Convivencia Escolar
 
-Proyecto semestral de la asignatura **Ingeniería de Software 2**.
+Proyecto semestral de Ingeniería de Software 2 orientado al diseño de un sistema de apoyo para la gestión, seguimiento y análisis de incidentes de convivencia escolar en un establecimiento educacional.
 
-## Descripción del proyecto
+## Descripción
 
-Este sistema tiene como objetivo apoyar a un establecimiento educacional en el **registro, seguimiento y análisis de incidentes de convivencia escolar**, facilitando la organización de la información y la coordinación de acciones de intervención.
+El sistema busca centralizar el registro de incidentes estudiantiles y dar soporte al trabajo de profesores, inspectores, orientadores, convivencia escolar y administradores. La solución no reemplaza los protocolos institucionales ni la toma de decisiones humanas: su propósito es ordenar la información, facilitar el seguimiento de casos y mejorar la trazabilidad de las acciones realizadas.
 
-La solución busca centralizar la información asociada a incidentes de convivencia, permitiendo registrar situaciones, identificar personas involucradas, consultar historiales y dar seguimiento a los casos. El sistema **no reemplaza las decisiones humanas ni los protocolos institucionales existentes**, sino que actúa como una herramienta de apoyo para la gestión de la información.
+De acuerdo con la documentación del proyecto, el sistema debe:
 
-## Problemática abordada
+- Registrar incidentes asociados a estudiantes existentes en la fuente institucional del colegio.
+- Consultar datos oficiales de alumnos, apoderados, cursos y funcionarios.
+- Gestionar estados, gravedad, protocolos y acciones de seguimiento.
+- Detectar reincidencia y generar alertas según umbrales definidos.
+- Emitir reportes y estadísticas para apoyo administrativo.
+- Mantener auditoría y trazabilidad de cambios.
+- Enviar notificaciones por correo a apoderados cuando corresponda.
 
-En los establecimientos educacionales, las situaciones relacionadas con la convivencia escolar suelen ser registradas de forma dispersa o incompleta, lo que dificulta:
+## Actores principales
 
-- Identificar patrones de conflicto.
-- Detectar casos de reincidencia.
-- Realizar seguimiento sistemático de los casos.
-- Coordinar acciones entre los distintos actores involucrados.
+- `Funcionario`: profesor, inspector, orientador u otro funcionario autorizado que registra y consulta incidentes.
+- `Administrador`: encargado de administrar permisos, reportes y configuración del sistema.
+- `Apoderado`: receptor de notificaciones enviadas desde el sistema.
 
-Frente a esta problemática, este proyecto propone una aplicación web funcional que permita mejorar el manejo de la información y apoyar la toma de decisiones dentro del contexto escolar.
+## Arquitectura del sistema
 
-## Objetivo general
+La arquitectura definida en la documentación se apoya en dos sistemas externos:
 
-Diseñar e implementar un sistema de software que apoye la **gestión, seguimiento y consulta de incidentes de convivencia escolar**, promoviendo una administración clara, estructurada y accesible de los casos registrados.
+- `Sistema de Datos Institucionales del Colegio`: fuente oficial de alumnos, apoderados, cursos y funcionarios.
+- `Servicio de Email`: servicio externo usado para el envío de notificaciones.
 
-## Alcance inicial
+### Vista de contexto
 
-El sistema considera, al menos, las siguientes funcionalidades:
+En la vista C1, el Sistema de Convivencia Escolar se ubica entre los funcionarios del establecimiento y los sistemas externos necesarios para operar:
 
-- Registro de incidentes.
-- Identificación de personas involucradas.
-- Caracterización de los incidentes.
-- Seguimiento de casos asociados.
-- Consulta de historial de incidentes y acciones realizadas.
+- Los funcionarios usan el sistema para registrar y consultar incidentes.
+- El administrador gestiona permisos, reportes y configuración.
+- El sistema consulta datos institucionales del colegio.
+- El sistema solicita el envío de correos al servicio de email.
 
-## Tecnologías propuestas
+Referencia:
 
-El proyecto será desarrollado como una aplicación web utilizando el siguiente stack tecnológico:
+- [C1-SystemContext-dark.png](<Documentacion del proyecto/C1-SystemContext-dark.png>)
 
-### Frontend
+### Vista de contenedores
 
-- **Next.js**
-- **TypeScript**
-- **Tailwind CSS**
+Según la vista C2, la solución se organiza en los siguientes contenedores:
 
-### Backend
+- `Contenido estático`: entrega los recursos de la interfaz web.
+- `UI`: interfaz utilizada por funcionarios y administradores.
+- `Backend`: expone la API y concentra la lógica de negocio.
+- `Base de Datos del Sistema`: almacena incidentes, seguimientos, auditoría, configuraciones y demás datos propios del software.
 
-- **NestJS**
-- **TypeScript**
+Además, el backend se integra con:
 
-### Base de datos
+- `Base de Datos Institucionales`: consulta información oficial del colegio.
+- `Servicio de Email`: delega el envío de correos a apoderados.
 
-- **PostgreSQL**
+Referencia:
 
-### ORM
+- [C2-ContainerDiagram-dark.png](<Documentacion del proyecto/C2-ContainerDiagram-dark.png>)
 
-- **Prisma**
+### Componentes principales del backend
 
+La vista C3 descompone el backend en servicios orientados al dominio:
 
-SUJETOS A CAMBIO
+- `API REST`: expone endpoints para autenticación, incidentes, seguimiento, reportes y consultas institucionales.
+- `Gestión de Incidentes`: registra incidentes, clasifica gravedad, asocia protocolos y gestiona cierre o reapertura.
+- `Seguimiento y Reincidencia`: registra acciones de seguimiento, calcula reincidencia, monitorea umbrales y genera alertas.
+- `Reportes y Estadísticas`: genera consultas, reportes y métricas por alumno, curso, fecha, gravedad y estado.
+- `Consulta de datos institucionales`: obtiene y valida datos de alumnos, apoderados, cursos y funcionarios desde la fuente oficial.
+- `Notificaciones`: administra el envío de correos y alertas a apoderados.
+- `Auditoría y Trazabilidad`: registra creación, edición y cambios críticos del sistema.
+- `Persistencia`: centraliza el acceso a datos mediante repositorios u ORM.
+- `Autenticación y Autorización`: valida credenciales institucionales y controla roles y permisos.
 
-## Estructura general del proyecto
+Referencia:
 
-```bash
-isw2-convivencia-escolar/
-├── apps/
-│   ├── web/        # Frontend en Next.js
-│   └── api/        # Backend en NestJS
-├── docs/           # Documentación del proyecto
-├── README.md
-└── .gitignore
+- [C3-BackendComponents-dark.png](<Documentacion del proyecto/C3-BackendComponents-dark.png>)
+
+## Alcance funcional
+
+Los requisitos funcionales actualmente levantados se agrupan en estas áreas:
+
+### 1. Consulta de datos institucionales
+
+- Consulta de alumnos, apoderados, curso y año de ingreso.
+- Validación de existencia del alumno antes de registrar incidentes.
+
+### 2. Gestión de incidentes
+
+- Registro de incidentes con título, fecha, descripción, rol del funcionario y alumno asociado.
+- Asignación de gravedad y asociación del protocolo correspondiente.
+- Cambio de estado, cierre y reapertura de incidentes.
+- Registro de observaciones, evidencias, documentos e historial del caso.
+- Búsqueda y filtrado por alumno, curso, fecha, gravedad, estado o funcionario responsable.
+
+### 3. Seguimiento y reincidencia
+
+- Cálculo de reincidencia por alumno.
+- Visualización de incidentes acumulados.
+- Alertas por superación de umbrales.
+- Registro de acciones coordinadas y comunicaciones con apoderados.
+
+### 4. Usuarios, roles y permisos
+
+- Autenticación con credenciales institucionales.
+- Control de acceso según rol.
+- Administración de permisos para funcionarios autorizados.
+
+### 5. Reportes y notificaciones
+
+- Generación y exportación de reportes.
+- Visualización de estadísticas por alumno y curso.
+- Envío de correos a apoderados cuando se reporta un incidente.
+
+Referencia completa:
+
+- [requisitos_funcionales.md](<Documentacion del proyecto/requisitos_funcionales.md>)
+
+## Estructura del repositorio
+
+```text
+Ing_software2-sistema-convivencia-escolar/
+|-- apps/
+|   |-- api/   # Espacio reservado para la implementación del backend
+|   `-- web/   # Espacio reservado para la implementación de la interfaz web
+|-- Documentacion del proyecto/
+|   |-- C1-SystemContext-dark.png
+|   |-- C2-ContainerDiagram-dark.png
+|   |-- C3-BackendComponents-dark.png
+|   `-- requisitos_funcionales.md
+`-- README.md
 ```
 
-## Miembros del grupo
+## Estado actual
+
+El repositorio se encuentra principalmente en una etapa de definición y documentación de la solución. La arquitectura objetivo, los actores y el alcance funcional ya están descritos, pero la implementación en `apps/api` y `apps/web` todavía no refleja todos los componentes planteados en los diagramas.
+
+## Consideraciones
+
+- El sistema está pensado como herramienta de apoyo a la convivencia escolar, no como reemplazo de protocolos institucionales.
+- La información institucional proviene de una fuente externa oficial del colegio.
+- El envío de correos depende de un servicio externo de email.
+
+## Equipo
 
 - Ignacio Jose Barria Concha
 - Kaori Sofia Encina Gil
 - Joaquin Rodrigo Hernandez Espinoza
 - Gabriel Ignacio Huerta Torres
 - Enzo Gabriel Levancini Arriagada
-
-## Estado del proyecto
-
-Actualmente el proyecto se encuentra en etapa de **definición y validación inicial del sistema**, correspondiente a la primera fase del desarrollo semestral.
-
-## Etapas del proyecto
-
-El desarrollo del sistema se organizará en tres etapas principales:
-
-1. Definición y validación inicial del sistema (RUP)
-2. Sprint 1 – Primer incremento del sistema
-3. Sprint 2 – Sistema integrado
-
-## Repositorio
-
-Este repositorio contendrá el código fuente, documentación, avances y entregables asociados al proyecto semestral.
 
 ## Flujo de trabajo con Git
 
@@ -215,7 +271,7 @@ git merge develop
 git push origin main
 ```
 
-### Resumen del flujo de trabajo
+#### Resumen del flujo de trabajo
 
 ```text
 main -> actualizar
@@ -234,8 +290,3 @@ develop -> merge a main cuando exista una versión estable
 - Actualizar la rama `develop` antes de empezar una nueva tarea.
 - Verificar el funcionamiento de los cambios antes de abrir un Pull Request.
 - Solo fusionar `develop` con `main` cuando el sistema esté estable y listo para entrega.
-
-## Observaciones
-
-- No se utilizarán datos reales.
-- No se requiere integración con sistemas externos reales.
