@@ -1,30 +1,22 @@
 # Requisitos funcionales del sistema
 
-## 1. Gestión de perfil del alumno
+## 1. Consulta de datos institucionales
 
-**RF-01.** El sistema debe permitir registrar alumnos con los siguientes datos: identificador, nombre completo, RUT, curso, año de ingreso, apoderado(s), contacto de emergencia y fotografía.
+**RF-01.** El sistema debe permitir consultar los datos básicos de un alumno desde la fuente institucional del colegio, utilizando su identificador institucional.
 
-**RF-02.** El sistema debe permitir visualizar el perfil completo del alumno a funcionarios autorizados.
+**RF-02.** El sistema debe permitir consultar los apoderados asociados a un alumno desde la fuente institucional, para fines de notificación y seguimiento.
 
-**RF-03.** El sistema debe permitir buscar alumnos por identificador, nombre completo, RUT, curso o año de ingreso.
+**RF-03.** El sistema debe permitir validar la existencia de un alumno en la fuente institucional antes de registrar un incidente.
 
-**RF-04.** El sistema debe permitir actualizar la información del perfil del alumno a usuarios autorizados.
-
-**RF-05.** El sistema debe permitir asociar uno o más apoderados a un alumno.
-
-**RF-06.** El sistema debe permitir actualizar la información de contacto de los apoderados y del contacto de emergencia.
-
-**RF-07.** El sistema debe permitir registrar y actualizar la fotografía del alumno.
-
-**RF-08.** El sistema debe permitir mantener un historial de modificaciones realizadas al perfil del alumno.
+**RF-04.** El sistema debe permitir consultar datos institucionales complementarios del alumno, como curso y año de ingreso, para apoyar búsquedas, filtros, seguimiento y reportes.
 
 ---
 
 ## 2. Gestión de incidentes
 
-**RF-09.** El sistema debe permitir a profesores e inspectores registrar incidentes asociados a un alumno.
+**RF-09.** El sistema debe permitir a profesores e inspectores registrar incidentes asociados a un alumno existente en la fuente institucional del colegio.
 
-**RF-10.** El sistema debe permitir registrar en cada incidente los siguientes datos: título, fecha, descripción, rol del funcionario que reporta e identificador del alumno.
+**RF-10.** El sistema debe permitir registrar en cada incidente los siguientes datos: título, fecha, descripción, rol del funcionario que reporta e identificador institucional del alumno.
 
 **RF-11.** El sistema debe permitir a funcionarios autorizados asignar o modificar la gravedad de un incidente.
 
@@ -38,7 +30,7 @@
 
 **RF-16.** El sistema debe permitir consultar el historial de incidentes de un alumno.
 
-**RF-17.** El sistema debe permitir buscar y filtrar incidentes por alumno, curso, fecha, gravedad, estado o funcionario responsable.
+**RF-17.** El sistema debe permitir buscar y filtrar incidentes por alumno, curso, fecha, gravedad, estado o funcionario responsable, utilizando cuando corresponda datos consultados desde la fuente institucional.
 
 **RF-18.** El sistema debe permitir cerrar incidentes cuando hayan sido resueltos.
 
@@ -80,6 +72,6 @@
 
 **RF-31.** El sistema debe permitir exportar reportes para revisión administrativa.
 
-**RF-31.** El sistema debe envíar un correo cuando se reporte un incidente, notificando así a los apoderados de los alumnos involucrados.
+**RF-32.** El sistema debe permitir enviar un correo cuando se reporte un incidente, notificando a los apoderados del alumno involucrado obtenidos desde la fuente institucional del colegio.
 
 ---
