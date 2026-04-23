@@ -80,6 +80,16 @@ Referencia:
 
 ## Alcance funcional
 
+### Prototipo de consola basado en C3
+
+Para visualizar una maqueta simple de interaccion entre los componentes del diagrama C3, ejecutar:
+
+```bash
+npm run prototipo:c3
+```
+
+El prototipo usa solo `console.log` y no requiere conectarse a Supabase. Cada archivo en `apps/api/src/prototipo-c3/componentes/` representa un componente del backend descrito en la vista C3.
+
 Los requisitos funcionales actualmente levantados se agrupan en estas áreas:
 
 ### 1. Consulta de datos institucionales
