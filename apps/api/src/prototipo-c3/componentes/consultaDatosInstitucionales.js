@@ -1,19 +1,13 @@
 const { paso } = require('./impresora')
+const fs = require('fs') // ← agrega esta línea al inicio
+const path = require('path') // ← esta también, para la ruta del JSON
 
 class ConsultaDatosInstitucionales {
   constructor() {
-    this.alumnos = {
-      'ALU-1001': {
-        id: 'ALU-1001',
-        nombre: 'Camila Rojas',
-        curso: '8B',
-        anioIngreso: 2022,
-        apoderados: [
-          { nombre: 'Marcela Rojas', email: 'marcela.rojas@correo.cl' },
-          { nombre: 'Luis Rojas', email: 'luis.rojas@correo.cl' },
-        ],
-      },
-    }
+    const datos = JSON.parse(
+      fs.readFileSync(path.join(__dirname, './alumnos.json'), 'utf-8')
+    )
+    this.alumnos = datos.alumnos
   }
 
   obtenerAlumno(alumnoId) {
