@@ -19,7 +19,7 @@ const solicitud = {
   fecha: '2025-05-13',
 }
 
-const alumnoIdInvalido = 'ALU-1001'
+const alumnoIdInvalido = 'ALU-101' //Aca se puede cambiar el alumno por uno que exista en el json
 
 console.log(`\n=== Intentando registrar incidente para alumno: ${alumnoIdInvalido} ===`)
 
