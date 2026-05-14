@@ -10,7 +10,7 @@ class Notificaciones {
     apoderados.forEach((apoderado) => {
       paso(
         'Notificaciones',
-        `Envia correo al Servicio de Email para ${apoderado.email}: incidente "${incidente.titulo}".`
+        `Envia correo al Servicio de Email para ${apoderado.correo}: incidente "${incidente.titulo}".`
       )
     })
 
