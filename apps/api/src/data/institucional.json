@@ -1,0 +1,252 @@
+{
+  "alumnos": [
+    {
+      "id": "ALU-1001",
+      "nombre": "Camila Rojas",
+      "curso": "8B",
+      "anioIngreso": 2022,
+      "apoderados": ["APO-2001", "APO-2002"]
+    },
+    {
+      "id": "ALU-1002",
+      "nombre": "Martin Soto",
+      "curso": "7A",
+      "anioIngreso": 2021,
+      "apoderados": ["APO-2003"]
+    },
+    {
+      "id": "ALU-1003",
+      "nombre": "Valentina Perez",
+      "curso": "6C",
+      "anioIngreso": 2023,
+      "apoderados": ["APO-2004"]
+    },
+    {
+      "id": "ALU-1004",
+      "nombre": "Diego Morales",
+      "curso": "8A",
+      "anioIngreso": 2020,
+      "apoderados": ["APO-2005", "APO-2006"]
+    },
+    {
+      "id": "ALU-1005",
+      "nombre": "Antonia Fuentes",
+      "curso": "5B",
+      "anioIngreso": 2024,
+      "apoderados": ["APO-2007"]
+    },
+    {
+      "id": "ALU-1006",
+      "nombre": "Lucas Herrera",
+      "curso": "7B",
+      "anioIngreso": 2022,
+      "apoderados": ["APO-2008"]
+    },
+    {
+      "id": "ALU-1007",
+      "nombre": "Sofia Araya",
+      "curso": "6A",
+      "anioIngreso": 2021,
+      "apoderados": ["APO-2009"]
+    },
+    {
+      "id": "ALU-1008",
+      "nombre": "Benjamin Castillo",
+      "curso": "8C",
+      "anioIngreso": 2020,
+      "apoderados": ["APO-2010"]
+    },
+    {
+      "id": "ALU-1009",
+      "nombre": "Isidora Vega",
+      "curso": "5A",
+      "anioIngreso": 2024,
+      "apoderados": ["APO-2011"]
+    },
+    {
+      "id": "ALU-1010",
+      "nombre": "Tomas Navarro",
+      "curso": "7C",
+      "anioIngreso": 2022,
+      "apoderados": ["APO-2012"]
+    },
+    {
+      "id": "ALU-1011",
+      "nombre": "Florencia Diaz",
+      "curso": "6B",
+      "anioIngreso": 2023,
+      "apoderados": ["APO-2013"]
+    },
+    {
+      "id": "ALU-1012",
+      "nombre": "Mateo Aguilera",
+      "curso": "8B",
+      "anioIngreso": 2021,
+      "apoderados": ["APO-2014"]
+    }
+  ],
+  "apoderados": [
+    {
+      "id": "APO-2001",
+      "nombre": "Marcela Rojas",
+      "correo": "marcela.rojas@correo.cl",
+      "telefono": "+56911110001",
+      "alumnoId": "ALU-1001",
+      "relacion": "madre"
+    },
+    {
+      "id": "APO-2002",
+      "nombre": "Luis Rojas",
+      "correo": "luis.rojas@correo.cl",
+      "telefono": "+56911110002",
+      "alumnoId": "ALU-1001",
+      "relacion": "padre"
+    },
+    {
+      "id": "APO-2003",
+      "nombre": "Carolina Soto",
+      "correo": "carolina.soto@correo.cl",
+      "telefono": "+56911110003",
+      "alumnoId": "ALU-1002",
+      "relacion": "madre"
+    },
+    {
+      "id": "APO-2004",
+      "nombre": "Jorge Perez",
+      "correo": "jorge.perez@correo.cl",
+      "telefono": "+56911110004",
+      "alumnoId": "ALU-1003",
+      "relacion": "padre"
+    },
+    {
+      "id": "APO-2005",
+      "nombre": "Paula Morales",
+      "correo": "paula.morales@correo.cl",
+      "telefono": "+56911110005",
+      "alumnoId": "ALU-1004",
+      "relacion": "madre"
+    },
+    {
+      "id": "APO-2006",
+      "nombre": "Roberto Morales",
+      "correo": "roberto.morales@correo.cl",
+      "telefono": "+56911110006",
+      "alumnoId": "ALU-1004",
+      "relacion": "padre"
+    },
+    {
+      "id": "APO-2007",
+      "nombre": "Claudia Fuentes",
+      "correo": "claudia.fuentes@correo.cl",
+      "telefono": "+56911110007",
+      "alumnoId": "ALU-1005",
+      "relacion": "madre"
+    },
+    {
+      "id": "APO-2008",
+      "nombre": "Andres Herrera",
+      "correo": "andres.herrera@correo.cl",
+      "telefono": "+56911110008",
+      "alumnoId": "ALU-1006",
+      "relacion": "padre"
+    },
+    {
+      "id": "APO-2009",
+      "nombre": "Daniela Araya",
+      "correo": "daniela.araya@correo.cl",
+      "telefono": "+56911110009",
+      "alumnoId": "ALU-1007",
+      "relacion": "madre"
+    },
+    {
+      "id": "APO-2010",
+      "nombre": "Cristian Castillo",
+      "correo": "cristian.castillo@correo.cl",
+      "telefono": "+56911110010",
+      "alumnoId": "ALU-1008",
+      "relacion": "padre"
+    },
+    {
+      "id": "APO-2011",
+      "nombre": "Fernanda Vega",
+      "correo": "fernanda.vega@correo.cl",
+      "telefono": "+56911110011",
+      "alumnoId": "ALU-1009",
+      "relacion": "madre"
+    },
+    {
+      "id": "APO-2012",
+      "nombre": "Hector Navarro",
+      "correo": "hector.navarro@correo.cl",
+      "telefono": "+56911110012",
+      "alumnoId": "ALU-1010",
+      "relacion": "padre"
+    },
+    {
+      "id": "APO-2013",
+      "nombre": "Natalia Diaz",
+      "correo": "natalia.diaz@correo.cl",
+      "telefono": "+56911110013",
+      "alumnoId": "ALU-1011",
+      "relacion": "madre"
+    },
+    {
+      "id": "APO-2014",
+      "nombre": "Ramon Aguilera",
+      "correo": "ramon.aguilera@correo.cl",
+      "telefono": "+56911110014",
+      "alumnoId": "ALU-1012",
+      "relacion": "tutor legal"
+    }
+  ],
+  "funcionarios": [
+    {
+      "id": "FUN-3001",
+      "nombre": "Ana Morales",
+      "correoInstitucional": "ana.morales@colegio.cl",
+      "rol": "profesor"
+    },
+    {
+      "id": "FUN-3002",
+      "nombre": "Pedro Salinas",
+      "correoInstitucional": "pedro.salinas@colegio.cl",
+      "rol": "inspector"
+    },
+    {
+      "id": "FUN-3003",
+      "nombre": "Elena Vargas",
+      "correoInstitucional": "elena.vargas@colegio.cl",
+      "rol": "orientador"
+    },
+    {
+      "id": "FUN-3004",
+      "nombre": "Ricardo Pizarro",
+      "correoInstitucional": "ricardo.pizarro@colegio.cl",
+      "rol": "convivencia escolar"
+    },
+    {
+      "id": "FUN-3005",
+      "nombre": "Marta Leiva",
+      "correoInstitucional": "marta.leiva@colegio.cl",
+      "rol": "administrador"
+    },
+    {
+      "id": "FUN-3006",
+      "nombre": "Javier Campos",
+      "correoInstitucional": "javier.campos@colegio.cl",
+      "rol": "profesor"
+    },
+    {
+      "id": "FUN-3007",
+      "nombre": "Patricia Munoz",
+      "correoInstitucional": "patricia.munoz@colegio.cl",
+      "rol": "orientador"
+    },
+    {
+      "id": "FUN-3008",
+      "nombre": "Sebastian Torres",
+      "correoInstitucional": "sebastian.torres@colegio.cl",
+      "rol": "inspector"
+    }
+  ]
+}
