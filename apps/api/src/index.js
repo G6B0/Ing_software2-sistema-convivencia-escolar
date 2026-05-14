@@ -4,9 +4,11 @@ require('dotenv').config({
   quiet: true,
 })
 const crearApp = require('./app')
+const crearPersistenciaSistema = require('./lib/crearPersistenciaSistema')
 
 const port = Number(process.env.PORT) || 3001
-const app = crearApp()
+const persistenciaSistema = crearPersistenciaSistema()
+const app = crearApp({ persistenciaSistema })
 
 app.listen(port, () => {
   console.log(`API corriendo en http://localhost:${port}`)

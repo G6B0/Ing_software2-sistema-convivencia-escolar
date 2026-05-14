@@ -4,34 +4,47 @@ require('dotenv').config({
   quiet: true,
 })
 const { createClient } = require('@supabase/supabase-js')
+const { ErrorConfiguracionBaseDatos } = require('./erroresSistema')
 
-const rawSupabaseUrl = process.env.SUPABASE_URL?.trim()
-const supabaseKey =
-  process.env.SUPABASE_SECRET_KEY?.trim() ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+function obtenerConfigSupabase(env = process.env) {
+  const rawSupabaseUrl = env.SUPABASE_URL?.trim()
+  const supabaseKey = env.SUPABASE_SECRET_KEY?.trim() || env.SUPABASE_SERVICE_ROLE_KEY?.trim()
 
-if (!rawSupabaseUrl) {
-  throw new Error(
-    'Falta SUPABASE_URL en apps/api/.env. Debe ser la URL del proyecto o el project ref.'
-  )
+  if (!rawSupabaseUrl) {
+    throw new ErrorConfiguracionBaseDatos(
+      'Falta SUPABASE_URL para conectar con la Base de Datos del Sistema.'
+    )
+  }
+
+  if (!supabaseKey) {
+    throw new ErrorConfiguracionBaseDatos(
+      'Falta SUPABASE_SECRET_KEY o SUPABASE_SERVICE_ROLE_KEY para conectar con la Base de Datos del Sistema.'
+    )
+  }
+
+  const supabaseUrl = rawSupabaseUrl.match(/^https?:\/\//i)
+    ? rawSupabaseUrl
+    : `https://${rawSupabaseUrl}.supabase.co`
+
+  return {
+    supabaseUrl,
+    supabaseKey,
+  }
 }
 
-if (!supabaseKey) {
-  throw new Error(
-    'Falta SUPABASE_SECRET_KEY o SUPABASE_SERVICE_ROLE_KEY en apps/api/.env.'
-  )
+function crearClienteSupabase({ env = process.env, createClientImpl = createClient } = {}) {
+  const { supabaseUrl, supabaseKey } = obtenerConfigSupabase(env)
+
+  return createClientImpl(supabaseUrl, supabaseKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
 }
 
-const supabaseUrl = rawSupabaseUrl.match(/^https?:\/\//i)
-  ? rawSupabaseUrl
-  : `https://${rawSupabaseUrl}.supabase.co`
-
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-  },
-})
-
-module.exports = supabase
+module.exports = {
+  crearClienteSupabase,
+  obtenerConfigSupabase,
+}

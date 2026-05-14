@@ -1,0 +1,188 @@
+const { randomUUID } = require('node:crypto')
+const { ErrorValidacionSistema } = require('./erroresSistema')
+
+const CAMPOS_INCIDENTE_REQUERIDOS = [
+  'titulo',
+  'fecha',
+  'descripcion',
+  'gravedad',
+  'estado',
+  'funcionarioResponsableId',
+]
+
+const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
+const ROLES_PARTICIPANTE_INCIDENTE = new Set(['Agresor', 'Victima', 'Testigo', 'Involucrado'])
+
+function crearId(prefijo) {
+  return `${prefijo}-${randomUUID()}`
+}
+
+function validarCamposRequeridos(registro, campos, nombreEntidad) {
+  const camposFaltantes = campos.filter((campo) => !registro[campo])
+
+  if (camposFaltantes.length > 0) {
+    throw new ErrorValidacionSistema(
+      `${nombreEntidad} incompleto. Faltan campos requeridos: ${camposFaltantes.join(', ')}.`
+    )
+  }
+}
+
+class PersistenciaSistemaMemoria {
+  constructor() {
+    this.incidentes = new Map()
+    this.incidenteParticipantes = new Map()
+    this.seguimientos = new Map()
+    this.auditorias = new Map()
+  }
+
+  async guardarIncidente(datosIncidente) {
+    validarCamposRequeridos(datosIncidente, CAMPOS_INCIDENTE_REQUERIDOS, 'Incidente')
+
+    if (!ESTADOS_INCIDENTE.has(datosIncidente.estado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    validarParticipantes(datosIncidente.participantes)
+
+    const incidente = {
+      id: datosIncidente.id || crearId('INC'),
+      titulo: datosIncidente.titulo,
+      fecha: datosIncidente.fecha,
+      descripcion: datosIncidente.descripcion,
+      gravedad: datosIncidente.gravedad,
+      estado: datosIncidente.estado,
+      funcionarioResponsableId: datosIncidente.funcionarioResponsableId,
+      creadoEn: datosIncidente.creadoEn || new Date().toISOString(),
+    }
+
+    this.incidentes.set(incidente.id, incidente)
+
+    const participantes = datosIncidente.participantes.map((participante) => ({
+      id: participante.id || crearId('PAR'),
+      incidenteId: incidente.id,
+      alumnoInstitucionalId: participante.alumnoInstitucionalId,
+      rolEnIncidente: participante.rolEnIncidente,
+      observacion: participante.observacion || null,
+    }))
+
+    participantes.forEach((participante) => {
+      this.incidenteParticipantes.set(participante.id, participante)
+    })
+
+    return {
+      ...incidente,
+      participantes,
+    }
+  }
+
+  async consultarIncidentePorId(incidenteId) {
+    const incidente = this.incidentes.get(incidenteId)
+
+    if (!incidente) {
+      return null
+    }
+
+    return {
+      ...incidente,
+      participantes: await this.consultarParticipantesPorIncidente(incidenteId),
+    }
+  }
+
+  async listarIncidentes() {
+    return Promise.all(
+      Array.from(this.incidentes.keys()).map((incidenteId) =>
+        this.consultarIncidentePorId(incidenteId)
+      )
+    )
+  }
+
+  async consultarParticipantesPorIncidente(incidenteId) {
+    return Array.from(this.incidenteParticipantes.values()).filter(
+      (participante) => participante.incidenteId === incidenteId
+    )
+  }
+
+  async guardarAuditoria(datosAuditoria) {
+    validarCamposRequeridos(
+      datosAuditoria,
+      ['accion', 'fecha', 'funcionarioResponsableId', 'entidad', 'identificadorRelacionado'],
+      'Auditoria'
+    )
+
+    const auditoria = {
+      id: datosAuditoria.id || crearId('AUD'),
+      accion: datosAuditoria.accion,
+      fecha: datosAuditoria.fecha,
+      funcionarioResponsableId: datosAuditoria.funcionarioResponsableId,
+      entidad: datosAuditoria.entidad,
+      identificadorRelacionado: datosAuditoria.identificadorRelacionado,
+    }
+
+    this.auditorias.set(auditoria.id, auditoria)
+    return auditoria
+  }
+
+  async consultarAuditoriasPorIncidente(incidenteId) {
+    return Array.from(this.auditorias.values()).filter(
+      (auditoria) =>
+        auditoria.entidad === 'incidente' && auditoria.identificadorRelacionado === incidenteId
+    )
+  }
+
+  async guardarSeguimiento(datosSeguimiento) {
+    validarCamposRequeridos(
+      datosSeguimiento,
+      ['incidenteId', 'accion', 'fecha', 'funcionarioResponsableId'],
+      'Seguimiento'
+    )
+
+    if (!this.incidentes.has(datosSeguimiento.incidenteId)) {
+      throw new ErrorValidacionSistema('No existe el incidente indicado para el seguimiento.')
+    }
+
+    const seguimiento = {
+      id: datosSeguimiento.id || crearId('SEG'),
+      incidenteId: datosSeguimiento.incidenteId,
+      accion: datosSeguimiento.accion,
+      fecha: datosSeguimiento.fecha,
+      funcionarioResponsableId: datosSeguimiento.funcionarioResponsableId,
+    }
+
+    this.seguimientos.set(seguimiento.id, seguimiento)
+    return seguimiento
+  }
+
+  async consultarSeguimientosPorIncidente(incidenteId) {
+    return Array.from(this.seguimientos.values()).filter(
+      (seguimiento) => seguimiento.incidenteId === incidenteId
+    )
+  }
+}
+
+module.exports = {
+  CAMPOS_INCIDENTE_REQUERIDOS,
+  crearId,
+  ESTADOS_INCIDENTE,
+  PersistenciaSistemaMemoria,
+  ROLES_PARTICIPANTE_INCIDENTE,
+  validarCamposRequeridos,
+  validarParticipantes,
+}
+
+function validarParticipantes(participantes) {
+  if (!Array.isArray(participantes) || participantes.length === 0) {
+    throw new ErrorValidacionSistema('El incidente debe tener al menos un participante.')
+  }
+
+  participantes.forEach((participante) => {
+    validarCamposRequeridos(
+      participante,
+      ['alumnoInstitucionalId', 'rolEnIncidente'],
+      'Participante del incidente'
+    )
+
+    if (!ROLES_PARTICIPANTE_INCIDENTE.has(participante.rolEnIncidente)) {
+      throw new ErrorValidacionSistema('El rol del participante en el incidente no es valido.')
+    }
+  })
+}
