@@ -14,7 +14,19 @@ const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
 const ROLES_PARTICIPANTE_INCIDENTE = new Set(['Agresor', 'Victima', 'Testigo', 'Involucrado'])
 
 function crearId(prefijo) {
-  return `${prefijo}-${randomUUID()}`
+  if (prefijo === 'INC') {
+
+  const fecha = new Date()
+
+  const yyyymmdd =
+    fecha.getFullYear().toString() +
+    String(fecha.getMonth() + 1).padStart(2, '0') +
+    String(fecha.getDate()).padStart(2, '0')
+
+  return `${prefijo}-${yyyymmdd}-${randomUUID().slice(0, 6)}`
+}
+
+return `${prefijo}-${randomUUID().slice(0, 8)}`
 }
 
 function validarCamposRequeridos(registro, campos, nombreEntidad) {
