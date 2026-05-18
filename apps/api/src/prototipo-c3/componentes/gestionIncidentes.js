@@ -26,6 +26,10 @@ class GestionIncidentes {
       protocolo,
       alumno,
       reportadoPor: usuario.nombre,
+      funcionarioResponsable: {
+        nombre: usuario.nombre,
+        rol: usuario.rol,
+      },
     }
 
     this.siguienteId += 1
@@ -54,6 +58,26 @@ class GestionIncidentes {
     return incidente
   }
 
+  obtenerDetalle(incidenteId) {
+    paso(
+      'Gestion de Incidentes',
+      `Consulta detalle del incidente ${incidenteId}.`
+    )
+
+    const incidente = this.persistencia.obtenerIncidente(incidenteId)
+
+    if (!incidente) {
+      throw new Error(`Incidente ${incidenteId} no existe.`)
+    }
+
+    paso(
+      'Gestion de Incidentes',
+      `Devuelve detalle de ${incidenteId} con funcionario responsable: ${incidente.funcionarioResponsable.nombre}.`
+    )
+
+    return incidente
+  }
+  
   cerrarIncidente(incidente, usuario) {
     paso(
       'Gestion de Incidentes',
