@@ -113,3 +113,65 @@ test('US01: T03 Test 3: el incidente queda disponible para consulta', async () =
     'ALU-1003'
   )
 })
+
+test('US01: T05 Test 1: asigna estado inicial Abierto automaticamente', async () => {
+
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Pelea en recreo',
+    fecha: '2026-05-15',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Alta',
+    funcionarioResponsableId: 'FUN-3002',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Involucrado',
+      },
+    ],
+  })
+
+  assert.equal(incidente.estado, 'Abierto')
+})
+
+test('US01: T05 Test 2: incidente queda disponible para gestion posterior', async () => {
+
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Empujon',
+    fecha: '2026-05-15',
+    descripcion: 'Empujon entre alumnos',
+    gravedad: 'Media',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1002',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const incidentes = await persistenciaSistema.listarIncidentes()
+
+  assert.ok(incidentes.length > 0)
+
+  assert.equal(incidentes[0].estado, 'Abierto')
+
+  assert.equal(incidentes[0].id, incidente.id)
+})
