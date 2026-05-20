@@ -24,6 +24,7 @@ create table if not exists seguimientos (
   id text primary key,
   incidente_id text not null references incidentes(id),
   accion text not null,
+  evolucion_caso text not null,
   fecha timestamptz not null,
   funcionario_responsable_id text not null
 );
