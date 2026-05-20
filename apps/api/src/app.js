@@ -4,6 +4,7 @@ const ServicioInstitucional = require('./lib/servicioInstitucional')
 const { ErrorValidacionSistema } = require('./lib/erroresSistema')
 const { PersistenciaSistemaMemoria } = require('./lib/persistenciaSistema')
 const ServicioIncidentes = require('./lib/servicioIncidentes')
+const seguimientoRoutes = require('./routes/seguimientoroutes');
 
 function crearApp({
   servicioInstitucional = new ServicioInstitucional(),
@@ -13,7 +14,9 @@ function crearApp({
   const app = express()
 
   app.use(cors())
-  app.use(express.json())
+  app.use(express.json());
+  app.locals.servicioIncidentes = servicioIncidentes;
+  app.use('/', seguimientoRoutes);
 
   app.get('/institucional/alumnos/:alumnoId', (req, res) => {
     const alumno = servicioInstitucional.consultarAlumnoPorId(req.params.alumnoId)
