@@ -44,6 +44,7 @@ const esquemaSistema = {
       id: { tipo: 'string', requerido: true, unico: true },
       incidenteId: { tipo: 'string', requerido: true, referencia: 'incidentes.id' },
       accion: { tipo: 'string', requerido: true },
+      evolucionCaso: { tipo: 'string', requerido: true },
       fecha: { tipo: 'string', requerido: true },
       funcionarioResponsableId: {
         tipo: 'string',

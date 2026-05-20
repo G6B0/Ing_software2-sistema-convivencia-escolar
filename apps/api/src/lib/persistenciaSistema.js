@@ -11,6 +11,13 @@ const CAMPOS_INCIDENTE_REQUERIDOS = [
 
 const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
 const ROLES_PARTICIPANTE_INCIDENTE = new Set(['Agresor', 'Victima', 'Testigo', 'Involucrado'])
+const CAMPOS_SEGUIMIENTO_REQUERIDOS = [
+  'incidenteId',
+  'accion',
+  'evolucionCaso',
+  'fecha',
+  'funcionarioResponsableId',
+]
 
 function crearId(prefijo) {
   if (prefijo === 'INC') {
@@ -138,7 +145,7 @@ class PersistenciaSistemaMemoria {
   async guardarSeguimiento(datosSeguimiento) {
     validarCamposRequeridos(
       datosSeguimiento,
-      ['incidenteId', 'accion', 'fecha', 'funcionarioResponsableId'],
+      CAMPOS_SEGUIMIENTO_REQUERIDOS,
       'Seguimiento'
     )
 
@@ -150,6 +157,7 @@ class PersistenciaSistemaMemoria {
       id: datosSeguimiento.id || crearId('SEG'),
       incidenteId: datosSeguimiento.incidenteId,
       accion: datosSeguimiento.accion,
+      evolucionCaso: datosSeguimiento.evolucionCaso,
       fecha: datosSeguimiento.fecha,
       funcionarioResponsableId: datosSeguimiento.funcionarioResponsableId,
     }
@@ -167,6 +175,7 @@ class PersistenciaSistemaMemoria {
 
 module.exports = {
   CAMPOS_INCIDENTE_REQUERIDOS,
+  CAMPOS_SEGUIMIENTO_REQUERIDOS,
   crearId,
   ESTADOS_INCIDENTE,
   PersistenciaSistemaMemoria,
