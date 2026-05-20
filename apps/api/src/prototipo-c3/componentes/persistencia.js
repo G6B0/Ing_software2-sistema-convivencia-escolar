@@ -23,6 +23,7 @@ class Persistencia {
     return incidente
   }
 
+  
   guardarSeguimiento(seguimiento) {
     paso(
       'Persistencia',
@@ -56,6 +57,27 @@ class Persistencia {
     paso('Persistencia', 'Entrega todos los incidentes guardados a Reportes y Estadisticas.')
     return this.incidentes
   }
+
+  obtenerIncidente(incidenteId) {
+    paso(
+      'Persistencia',
+      `Consulta incidente ${incidenteId} en la Base de Datos del Sistema.`
+    )
+
+    const incidente = this.incidentes.find((inc) => inc.id === incidenteId)
+
+    if (!incidente) {
+      throw new Error(`Incidente ${incidenteId} no existe en la Base de Datos.`)
+    }
+
+    paso(
+      'Persistencia',
+      `Entrega incidente ${incidenteId} a Gestion de Incidentes.`
+    )
+
+    return incidente
+  }
+
 }
 
 module.exports = Persistencia

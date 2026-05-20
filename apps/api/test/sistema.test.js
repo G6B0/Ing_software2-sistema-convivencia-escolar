@@ -8,7 +8,6 @@ const crearPersistenciaSistema = require('../src/lib/crearPersistenciaSistema')
 const PersistenciaSistemaSupabase = require('../src/lib/persistenciaSistemaSupabase')
 const ServicioIncidentes = require('../src/lib/servicioIncidentes')
 const ServicioInstitucional = require('../src/lib/servicioInstitucional')
-const ServicioSeguimientos = require('../src/lib/servicioSeguimientos')
 const { crearClienteSupabase, obtenerConfigSupabase } = require('../src/lib/supabase')
 const crearApp = require('../src/app')
 
@@ -338,14 +337,14 @@ test('T06 Test 3: consulta seguimientos de un incidente', async () => {
 
 test('US03 Task: Test 1 guarda seguimiento con todos los campos requeridos', async () => {
   const { persistencia, incidente } = await crearPersistenciaConIncidente()
-  const servicioSeguimientos = new ServicioSeguimientos({
+  const servicioIncidentes = new ServicioIncidentes({
     persistenciaSistema: persistencia,
     servicioInstitucional: new ServicioInstitucional(),
   })
 
-  const seguimiento = await servicioSeguimientos.registrarSeguimiento(
+  const seguimiento = await servicioIncidentes.registrarSeguimiento(
+    incidente.id,
     {
-      incidenteId: incidente.id,
       fecha: '2026-05-15T09:30:00.000Z',
       accion: 'Entrevista con apoderado y estudiante',
       evolucionCaso: 'Se observa disposicion a reparar el conflicto.',
@@ -363,19 +362,18 @@ test('US03 Task: Test 1 guarda seguimiento con todos los campos requeridos', asy
 
 test('US03 Task: Test 2 vincula automaticamente al funcionario activo', async () => {
   const { persistencia, incidente } = await crearPersistenciaConIncidente()
-  const servicioSeguimientos = new ServicioSeguimientos({
+  const servicioIncidentes = new ServicioIncidentes({
     persistenciaSistema: persistencia,
     servicioInstitucional: new ServicioInstitucional(),
   })
 
   const payload = {
-    incidenteId: incidente.id,
     fecha: '2026-05-15T10:00:00.000Z',
     accion: 'Registro de compromiso de convivencia',
     evolucionCaso: 'El estudiante acepta seguimiento semanal.',
   }
 
-  const seguimiento = await servicioSeguimientos.registrarSeguimiento(payload, 'FUN-3003')
+  const seguimiento = await servicioIncidentes.registrarSeguimiento(incidente.id, payload, 'FUN-3003')
 
   assert.equal(Object.hasOwn(payload, 'funcionarioResponsableId'), false)
   assert.equal(seguimiento.funcionarioResponsableId, 'FUN-3003')
@@ -383,23 +381,22 @@ test('US03 Task: Test 2 vincula automaticamente al funcionario activo', async ()
 
 test('US03 Task: Test 3 mantiene integridad de los datos almacenados', async () => {
   const { persistencia, incidente } = await crearPersistenciaConIncidente()
-  const servicioSeguimientos = new ServicioSeguimientos({
+  const servicioIncidentes = new ServicioIncidentes({
     persistenciaSistema: persistencia,
     servicioInstitucional: new ServicioInstitucional(),
   })
 
   const payload = {
-    incidenteId: incidente.id,
     fecha: '2026-05-15T11:15:00.000Z',
     accion: 'Derivacion a orientacion',
     evolucionCaso: 'El caso queda en observacion por orientacion.',
   }
 
-  await servicioSeguimientos.registrarSeguimiento(payload, 'FUN-3001')
+  await servicioIncidentes.registrarSeguimiento(incidente.id, payload, 'FUN-3001')
 
   const [seguimientoGuardado] = await persistencia.consultarSeguimientosPorIncidente(incidente.id)
 
-  assert.equal(seguimientoGuardado.incidenteId, payload.incidenteId)
+  assert.equal(seguimientoGuardado.incidenteId, incidente.id)
   assert.equal(seguimientoGuardado.fecha, payload.fecha)
   assert.equal(seguimientoGuardado.accion, payload.accion)
   assert.equal(seguimientoGuardado.evolucionCaso, payload.evolucionCaso)

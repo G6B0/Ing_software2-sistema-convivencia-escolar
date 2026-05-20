@@ -42,6 +42,36 @@ class ServicioIncidentes {
     return incidente
   }
 
+  async registrarSeguimiento(incidenteId, datosSeguimiento, funcionarioSesionId) {
+    const incidente = await this.consultarIncidentePorId(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente al que intenta hacer seguimiento no existe.')
+    }
+
+    const funcionario = this.servicioInstitucional.consultarFuncionario(funcionarioSesionId)
+
+    if (!funcionario) {
+      throw new ErrorValidacionSistema('El funcionario responsable no existe.')
+    }
+
+    const nuevoSeguimiento = await this.persistenciaSistema.guardarSeguimiento({
+      ...datosSeguimiento,
+      incidenteId,
+      funcionarioResponsableId: funcionario.id,
+    })
+
+    await this.persistenciaSistema.guardarAuditoria({
+      accion: 'CREAR_SEGUIMIENTO',
+      fecha: new Date().toISOString(),
+      funcionarioResponsableId: funcionario.id,
+      entidad: 'seguimiento',
+      identificadorRelacionado: nuevoSeguimiento.id,
+    })
+
+    return nuevoSeguimiento
+  }
+
   consultarIncidentePorId(incidenteId) {
     return this.persistenciaSistema.consultarIncidentePorId(incidenteId)
   }
