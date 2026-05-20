@@ -6,7 +6,6 @@ const CAMPOS_INCIDENTE_REQUERIDOS = [
   'fecha',
   'descripcion',
   'gravedad',
-  'estado',
   'funcionarioResponsableId',
 ]
 
@@ -49,11 +48,6 @@ class PersistenciaSistemaMemoria {
 
   async guardarIncidente(datosIncidente) {
     validarCamposRequeridos(datosIncidente, CAMPOS_INCIDENTE_REQUERIDOS, 'Incidente')
-
-    if (!ESTADOS_INCIDENTE.has(datosIncidente.estado)) {
-      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
-    }
-
     validarParticipantes(datosIncidente.participantes)
 
     const incidente = {
@@ -62,7 +56,7 @@ class PersistenciaSistemaMemoria {
       fecha: datosIncidente.fecha,
       descripcion: datosIncidente.descripcion,
       gravedad: datosIncidente.gravedad,
-      estado: datosIncidente.estado,
+      estado: 'Abierto',
       funcionarioResponsableId: datosIncidente.funcionarioResponsableId,
       creadoEn: datosIncidente.creadoEn || new Date().toISOString(),
     }
