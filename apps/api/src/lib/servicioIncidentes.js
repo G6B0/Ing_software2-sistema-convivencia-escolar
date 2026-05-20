@@ -43,6 +43,14 @@ class ServicioIncidentes {
   }
 
   async registrarSeguimiento(incidenteId, datosSeguimiento, funcionarioSesionId) {
+    if (!datosSeguimiento.descripcion || datosSeguimiento.descripcion.trim() === '') {
+      throw new ErrorValidacionSistema('La descripción del seguimiento es obligatoria.')
+    }
+    
+    if (!datosSeguimiento.fecha || datosSeguimiento.fecha.trim() === '') {
+      throw new ErrorValidacionSistema('La fecha del seguimiento es obligatoria.')
+    }
+
     const incidente = await this.consultarIncidentePorId(incidenteId)
 
     if (!incidente) {
