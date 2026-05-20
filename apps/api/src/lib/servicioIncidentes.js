@@ -1,7 +1,6 @@
 const { ErrorValidacionSistema } = require('./erroresSistema')
 
 class ServicioIncidentes {
-
   constructor({ persistenciaSistema, servicioInstitucional }) {
     this.persistenciaSistema = persistenciaSistema
     this.servicioInstitucional = servicioInstitucional
@@ -42,30 +41,35 @@ class ServicioIncidentes {
 
     return incidente
   }
-   
-  async registrarSeguimiento(incidenteId, datosSeguimiento) {
-    // 1. Validar que el incidente exista (Tarea 5464)
-    const incidente = await this.consultarIncidentePorId(incidenteId);
+
+  async registrarSeguimiento(incidenteId, datosSeguimiento, funcionarioSesionId) {
+    const incidente = await this.consultarIncidentePorId(incidenteId)
+
     if (!incidente) {
-      throw new ErrorValidacionSistema('El incidente al que intenta hacer seguimiento no existe.');
+      throw new ErrorValidacionSistema('El incidente al que intenta hacer seguimiento no existe.')
     }
 
-    // 2. Guardar el seguimiento usando la capa de persistencia (Tarea 5462)
-    const nuevoSeguimiento = await this.persistenciaSistema.guardarSeguimiento({
-      incidenteId,
-      ...datosSeguimiento
-    });
+    const funcionario = this.servicioInstitucional.consultarFuncionario(funcionarioSesionId)
 
-    // 3. Registrar auditoría automáticamente (Tarea 5467)
+    if (!funcionario) {
+      throw new ErrorValidacionSistema('El funcionario responsable no existe.')
+    }
+
+    const nuevoSeguimiento = await this.persistenciaSistema.guardarSeguimiento({
+      ...datosSeguimiento,
+      incidenteId,
+      funcionarioResponsableId: funcionario.id,
+    })
+
     await this.persistenciaSistema.guardarAuditoria({
       accion: 'CREAR_SEGUIMIENTO',
       fecha: new Date().toISOString(),
-      funcionarioResponsableId: datosSeguimiento.funcionarioResponsableId, // O funcionario_id, según tu JSON
+      funcionarioResponsableId: funcionario.id,
       entidad: 'seguimiento',
-      identificadorRelacionado: nuevoSeguimiento.id, // O el identificador que retorne la BD
-    });
+      identificadorRelacionado: nuevoSeguimiento.id,
+    })
 
-    return nuevoSeguimiento;
+    return nuevoSeguimiento
   }
 
   consultarIncidentePorId(incidenteId) {

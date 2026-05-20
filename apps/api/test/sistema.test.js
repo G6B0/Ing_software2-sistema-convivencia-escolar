@@ -45,6 +45,7 @@ test('T01 Test 1b: existe una tabla para participantes de incidentes', () => {
 test('T01 Test 2: existe una tabla o coleccion para seguimientos asociados a incidentes', () => {
   assert.ok(tablasDelSistema.includes('seguimientos'))
   assert.equal(esquemaSistema.seguimientos.campos.incidenteId.referencia, 'incidentes.id')
+  assert.equal(esquemaSistema.seguimientos.campos.evolucionCaso.requerido, true)
 })
 
 test('T01 Test 3: existe una tabla o coleccion para auditorias del sistema', () => {
@@ -291,6 +292,7 @@ test('T06 Test 1: guarda seguimiento asociado a incidente existente', async () =
   const seguimiento = await persistencia.guardarSeguimiento({
     incidenteId: incidente.id,
     accion: 'Entrevista con estudiante',
+    evolucionCaso: 'El estudiante reconoce lo ocurrido y se agenda nueva revision.',
     fecha: '2026-05-14T13:00:00.000Z',
     funcionarioResponsableId: 'FUN-3002',
   })
@@ -307,6 +309,7 @@ test('T06 Test 2: rechaza seguimiento para incidente inexistente', async () => {
       persistencia.guardarSeguimiento({
         incidenteId: 'INC-INEXISTENTE',
         accion: 'Seguimiento no permitido',
+        evolucionCaso: 'No corresponde guardar seguimiento.',
         fecha: '2026-05-14T13:00:00.000Z',
         funcionarioResponsableId: 'FUN-3002',
       }),
@@ -321,6 +324,7 @@ test('T06 Test 3: consulta seguimientos de un incidente', async () => {
   await persistencia.guardarSeguimiento({
     incidenteId: incidente.id,
     accion: 'Entrevista con estudiante',
+    evolucionCaso: 'El caso muestra avances positivos.',
     fecha: '2026-05-14T13:00:00.000Z',
     funcionarioResponsableId: 'FUN-3002',
   })
@@ -329,6 +333,74 @@ test('T06 Test 3: consulta seguimientos de un incidente', async () => {
 
   assert.equal(seguimientos.length, 1)
   assert.equal(seguimientos[0].accion, 'Entrevista con estudiante')
+})
+
+test('US03 Task: Test 1 guarda seguimiento con todos los campos requeridos', async () => {
+  const { persistencia, incidente } = await crearPersistenciaConIncidente()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema: persistencia,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const seguimiento = await servicioIncidentes.registrarSeguimiento(
+    incidente.id,
+    {
+      fecha: '2026-05-15T09:30:00.000Z',
+      accion: 'Entrevista con apoderado y estudiante',
+      evolucionCaso: 'Se observa disposicion a reparar el conflicto.',
+    },
+    'FUN-3002'
+  )
+
+  const seguimientos = await persistencia.consultarSeguimientosPorIncidente(incidente.id)
+
+  assert.ok(seguimiento.id)
+  assert.equal(seguimientos.length, 1)
+  assert.deepEqual(seguimientos[0], seguimiento)
+  assert.equal(seguimiento.funcionarioResponsableId, 'FUN-3002')
+})
+
+test('US03 Task: Test 2 vincula automaticamente al funcionario activo', async () => {
+  const { persistencia, incidente } = await crearPersistenciaConIncidente()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema: persistencia,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const payload = {
+    fecha: '2026-05-15T10:00:00.000Z',
+    accion: 'Registro de compromiso de convivencia',
+    evolucionCaso: 'El estudiante acepta seguimiento semanal.',
+  }
+
+  const seguimiento = await servicioIncidentes.registrarSeguimiento(incidente.id, payload, 'FUN-3003')
+
+  assert.equal(Object.hasOwn(payload, 'funcionarioResponsableId'), false)
+  assert.equal(seguimiento.funcionarioResponsableId, 'FUN-3003')
+})
+
+test('US03 Task: Test 3 mantiene integridad de los datos almacenados', async () => {
+  const { persistencia, incidente } = await crearPersistenciaConIncidente()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema: persistencia,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const payload = {
+    fecha: '2026-05-15T11:15:00.000Z',
+    accion: 'Derivacion a orientacion',
+    evolucionCaso: 'El caso queda en observacion por orientacion.',
+  }
+
+  await servicioIncidentes.registrarSeguimiento(incidente.id, payload, 'FUN-3001')
+
+  const [seguimientoGuardado] = await persistencia.consultarSeguimientosPorIncidente(incidente.id)
+
+  assert.equal(seguimientoGuardado.incidenteId, incidente.id)
+  assert.equal(seguimientoGuardado.fecha, payload.fecha)
+  assert.equal(seguimientoGuardado.accion, payload.accion)
+  assert.equal(seguimientoGuardado.evolucionCaso, payload.evolucionCaso)
+  assert.equal(seguimientoGuardado.funcionarioResponsableId, 'FUN-3001')
 })
 
 test('API incidentes: permite guardar y consultar un incidente posteriormente', async () => {

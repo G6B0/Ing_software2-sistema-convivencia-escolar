@@ -1,5 +1,6 @@
 const {
   CAMPOS_INCIDENTE_REQUERIDOS,
+  CAMPOS_SEGUIMIENTO_REQUERIDOS,
   crearId,
   ESTADOS_INCIDENTE,
   validarCamposRequeridos,
@@ -47,6 +48,7 @@ function desdeSeguimientoSupabase(registro) {
     id: registro.id,
     incidenteId: registro.incidente_id,
     accion: registro.accion,
+    evolucionCaso: registro.evolucion_caso,
     fecha: registro.fecha,
     funcionarioResponsableId: registro.funcionario_responsable_id,
   }
@@ -192,7 +194,7 @@ class PersistenciaSistemaSupabase {
   async guardarSeguimiento(datosSeguimiento) {
     validarCamposRequeridos(
       datosSeguimiento,
-      ['incidenteId', 'accion', 'fecha', 'funcionarioResponsableId'],
+      CAMPOS_SEGUIMIENTO_REQUERIDOS,
       'Seguimiento'
     )
 
@@ -208,6 +210,7 @@ class PersistenciaSistemaSupabase {
         id: datosSeguimiento.id || crearId('SEG'),
         incidente_id: datosSeguimiento.incidenteId,
         accion: datosSeguimiento.accion,
+        evolucion_caso: datosSeguimiento.evolucionCaso,
         fecha: datosSeguimiento.fecha,
         funcionario_responsable_id: datosSeguimiento.funcionarioResponsableId,
       })
