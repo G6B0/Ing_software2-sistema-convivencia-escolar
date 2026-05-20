@@ -6,7 +6,6 @@ const CAMPOS_INCIDENTE_REQUERIDOS = [
   'fecha',
   'descripcion',
   'gravedad',
-  'estado',
   'funcionarioResponsableId',
 ]
 
@@ -14,7 +13,19 @@ const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
 const ROLES_PARTICIPANTE_INCIDENTE = new Set(['Agresor', 'Victima', 'Testigo', 'Involucrado'])
 
 function crearId(prefijo) {
-  return `${prefijo}-${randomUUID()}`
+  if (prefijo === 'INC') {
+
+  const fecha = new Date()
+
+  const yyyymmdd =
+    fecha.getFullYear().toString() +
+    String(fecha.getMonth() + 1).padStart(2, '0') +
+    String(fecha.getDate()).padStart(2, '0')
+
+  return `${prefijo}-${yyyymmdd}-${randomUUID().slice(0, 6)}`
+}
+
+return `${prefijo}-${randomUUID().slice(0, 8)}`
 }
 
 function validarCamposRequeridos(registro, campos, nombreEntidad) {
@@ -37,11 +48,6 @@ class PersistenciaSistemaMemoria {
 
   async guardarIncidente(datosIncidente) {
     validarCamposRequeridos(datosIncidente, CAMPOS_INCIDENTE_REQUERIDOS, 'Incidente')
-
-    if (!ESTADOS_INCIDENTE.has(datosIncidente.estado)) {
-      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
-    }
-
     validarParticipantes(datosIncidente.participantes)
 
     const incidente = {
@@ -50,7 +56,7 @@ class PersistenciaSistemaMemoria {
       fecha: datosIncidente.fecha,
       descripcion: datosIncidente.descripcion,
       gravedad: datosIncidente.gravedad,
-      estado: datosIncidente.estado,
+      estado: 'Abierto',
       funcionarioResponsableId: datosIncidente.funcionarioResponsableId,
       creadoEn: datosIncidente.creadoEn || new Date().toISOString(),
     }

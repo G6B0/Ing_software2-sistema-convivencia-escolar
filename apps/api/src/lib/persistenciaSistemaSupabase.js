@@ -67,10 +67,6 @@ class PersistenciaSistemaSupabase {
     validarCamposRequeridos(datosIncidente, CAMPOS_INCIDENTE_REQUERIDOS, 'Incidente')
     validarParticipantes(datosIncidente.participantes)
 
-    if (!ESTADOS_INCIDENTE.has(datosIncidente.estado)) {
-      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
-    }
-
     const incidenteId = datosIncidente.id || crearId('INC')
     const creadoEn = datosIncidente.creadoEn || new Date().toISOString()
 
@@ -82,7 +78,7 @@ class PersistenciaSistemaSupabase {
         fecha: datosIncidente.fecha,
         descripcion: datosIncidente.descripcion,
         gravedad: datosIncidente.gravedad,
-        estado: datosIncidente.estado,
+        estado: 'Abierto',
         funcionario_responsable_id: datosIncidente.funcionarioResponsableId,
         creado_en: creadoEn,
       })
