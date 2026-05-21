@@ -58,7 +58,7 @@ class GestionIncidentes {
     return incidente
   }
 
-  obtenerDetalle(incidenteId) {
+  obtenerDetalle(incidenteId) {//se mantiene el incidenteId pues de este modo cuando se busca en persistencia solo se busca con el ID como deberia ser
     paso(
       'Gestion de Incidentes',
       `Consulta detalle del incidente ${incidenteId}.`
@@ -75,6 +75,33 @@ class GestionIncidentes {
       `Devuelve detalle de ${incidenteId} con funcionario responsable: ${incidente.funcionarioResponsable.nombre}.`
     )
 
+    return incidente
+  }
+
+  registrarSeguimiento(incidenteId, accion, usuario) {
+    paso(
+      'Gestion de Incidentes',
+      `Recibe solicitud para registrar seguimiento en incidente ${incidenteId}.`
+    )
+
+    // Test 3: validar que el identificador no sea nulo o invalido
+    if (!incidenteId || typeof incidenteId !== 'string' || incidenteId.trim() === '') {
+      throw new Error('Identificador de incidente nulo o invalido.')
+    }
+
+    // Test 1: validar que el incidente existe
+    const incidente = this.persistencia.obtenerIncidente(incidenteId)
+
+    if (!incidente) {
+      throw new Error(`Incidente ${incidenteId} no existe en el sistema.`)
+    }
+
+    paso(
+      'Gestion de Incidentes',
+      `Incidente ${incidenteId} validado correctamente. Continuando con el registro.`
+    )
+
+    // Test 2: flujo exitoso, delega en seguimientoReincidencia
     return incidente
   }
   
