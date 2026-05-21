@@ -10,6 +10,11 @@ const CAMPOS_INCIDENTE_REQUERIDOS = [
 ]
 
 const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
+const GRAVEDADES_INCIDENTE = new Set([
+  'Leve',
+  'Moderado',
+  'Grave',
+])
 const ROLES_PARTICIPANTE_INCIDENTE = new Set(['Agresor', 'Victima', 'Testigo', 'Involucrado'])
 const CAMPOS_SEGUIMIENTO_REQUERIDOS = [
   'incidenteId',
