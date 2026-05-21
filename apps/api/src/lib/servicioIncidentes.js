@@ -83,6 +83,10 @@ class ServicioIncidentes {
   consultarIncidentePorId(incidenteId) {
     return this.persistenciaSistema.consultarIncidentePorId(incidenteId)
   }
+
+  async listarIncidentes() {
+    return await this.persistenciaSistema.listarIncidentes()
+  }
 }
 
 module.exports = ServicioIncidentes

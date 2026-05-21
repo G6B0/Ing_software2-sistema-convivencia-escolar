@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, CSSProperties } from 'react';
+import { useState, FormEvent, CSSProperties, useEffect } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -183,6 +183,8 @@ function IncidenciasScreen() {
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
+  const [incidentes, setIncidentes] = useState<any[]>([]);
+  const [loadingIncidentes, setLoadingIncidentes] = useState(false);
 
   const set = (k: keyof FormData, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -236,6 +238,26 @@ function IncidenciasScreen() {
     setErrores({});
   };
 
+  const cargarIncidentes = async () => {
+    setLoadingIncidentes(true);
+    try {
+      const response = await fetch(`${API_URL}/incidentes`);
+      const resultado = await response.json();
+
+      if (resultado.ok) {
+        setIncidentes(resultado.data || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar incidentes:', error);
+    } finally {
+      setLoadingIncidentes(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarIncidentes();
+  }, []);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setMensaje(null);
@@ -276,6 +298,7 @@ function IncidenciasScreen() {
           texto: `Incidente registrado exitosamente con ID: ${resultado.data?.id}`,
         });
         limpiarFormulario();
+        await cargarIncidentes();
       } else {
         setMensaje({
           tipo: 'error',
@@ -419,6 +442,112 @@ function IncidenciasScreen() {
             </Btn>
           </div>
         </form>
+      </div>
+
+      {/* Lista de incidentes registrados */}
+      <div style={{ marginTop: 32 }}>
+        <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
+          Incidentes Registrados
+        </h2>
+
+        {loadingIncidentes ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
+            <i className="bi bi-arrow-repeat" style={{ fontSize: 24, animation: 'spin 0.9s linear infinite' }} />
+            <p style={{ marginTop: 12 }}>Cargando incidentes...</p>
+          </div>
+        ) : incidentes.length === 0 ? (
+          <div style={{
+            background: '#fff',
+            borderRadius: 12,
+            border: '1px solid #e2e8f0',
+            padding: 40,
+            textAlign: 'center',
+            color: '#64748b'
+          }}>
+            <i className="bi bi-inbox" style={{ fontSize: 32 }} />
+            <p style={{ marginTop: 12 }}>No hay incidentes registrados</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {incidentes.map((incidente) => (
+              <div
+                key={incidente.id}
+                style={{
+                  background: '#fff',
+                  borderRadius: 12,
+                  border: '1px solid #e2e8f0',
+                  padding: '20px 24px',
+                  transition: 'box-shadow 0.2s',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12 }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#0f172a' }}>
+                      {incidente.titulo}
+                    </h3>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
+                      ID: {incidente.id}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: incidente.gravedad === 'Grave' ? '#fee2e2' : incidente.gravedad === 'Moderado' ? '#fef3c7' : '#dbeafe',
+                      color: incidente.gravedad === 'Grave' ? '#991b1b' : incidente.gravedad === 'Moderado' ? '#92400e' : '#1e40af'
+                    }}>
+                      {incidente.gravedad}
+                    </span>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: '#dcfce7',
+                      color: '#15803d'
+                    }}>
+                      {incidente.estado}
+                    </span>
+                  </div>
+                </div>
+
+                <p style={{ margin: '12px 0', fontSize: 14, color: '#475569', lineHeight: 1.5 }}>
+                  {incidente.descripcion}
+                </p>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  gap: 16,
+                  paddingTop: 12,
+                  borderTop: '1px solid #f1f5f9',
+                  fontSize: 13
+                }}>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Fecha: </span>
+                    <span style={{ color: '#0f172a', fontWeight: 500 }}>
+                      {new Date(incidente.fecha).toLocaleDateString('es-CL')}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Responsable: </span>
+                    <span style={{ color: '#0f172a', fontWeight: 500 }}>
+                      {incidente.funcionarioResponsableId}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Participantes: </span>
+                    <span style={{ color: '#0f172a', fontWeight: 500 }}>
+                      {incidente.participantes?.length || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
