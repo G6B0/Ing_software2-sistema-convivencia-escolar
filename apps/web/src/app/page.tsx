@@ -93,7 +93,12 @@ interface SidebarProps {
 
 function Sidebar({ current, navigate, user }: SidebarProps) {
   const items = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'speedometer2' },
     { id: 'incidencias', label: 'Incidencias', icon: 'exclamation-triangle' },
+    { id: 'registrar', label: 'Registrar', icon: 'plus-circle' },
+    { id: 'seguimiento', label: 'Seguimiento', icon: 'journal-check' },
+    { id: 'ranking', label: 'Ranking Cursos', icon: 'bar-chart-line' },
+    { id: 'mensual', label: 'Reporte Mensual', icon: 'calendar3' },
   ];
 
   const initials = user.name.split(' ').slice(0, 2).map(n => n[0]).join('');
@@ -149,6 +154,53 @@ function Sidebar({ current, navigate, user }: SidebarProps) {
           </button>
         ))}
       </nav>
+    </div>
+  );
+}
+
+/* ==================== PANTALLAS ==================== */
+
+function DashboardScreen() {
+  return (
+    <div style={{ padding: '28px 32px' }}>
+      <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Dashboard</h1>
+      <p style={{ margin: '4px 0 0', fontSize: 14, color: '#64748b' }}>Panel de control del sistema</p>
+    </div>
+  );
+}
+
+function RegistrarScreen() {
+  return (
+    <div style={{ padding: '28px 32px' }}>
+      <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Registrar Incidencia</h1>
+      <p style={{ margin: '4px 0 0', fontSize: 14, color: '#64748b' }}>Complete los campos para registrar un nuevo incidente</p>
+    </div>
+  );
+}
+
+function SeguimientoScreen() {
+  return (
+    <div style={{ padding: '28px 32px' }}>
+      <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Seguimiento de Casos</h1>
+      <p style={{ margin: '4px 0 0', fontSize: 14, color: '#64748b' }}>Gestión y seguimiento de incidentes activos</p>
+    </div>
+  );
+}
+
+function RankingScreen() {
+  return (
+    <div style={{ padding: '28px 32px' }}>
+      <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Ranking de Cursos</h1>
+      <p style={{ margin: '4px 0 0', fontSize: 14, color: '#64748b' }}>Cursos ordenados por cantidad de incidencias</p>
+    </div>
+  );
+}
+
+function MensualScreen() {
+  return (
+    <div style={{ padding: '28px 32px' }}>
+      <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Reporte Mensual</h1>
+      <p style={{ margin: '4px 0 0', fontSize: 14, color: '#64748b' }}>Evolución de incidencias registradas</p>
     </div>
   );
 }
@@ -427,7 +479,7 @@ function IncidenciasScreen() {
 /* ==================== APP PRINCIPAL ==================== */
 
 export default function Home() {
-  const [screen, setScreen] = useState('incidencias');
+  const [screen, setScreen] = useState('dashboard');
   const user = {
     name: 'Funcionario Usuario',
     role: 'Profesor'
@@ -439,7 +491,12 @@ export default function Home() {
     <div style={{ display: 'flex', height: '100vh', fontFamily: "'DM Sans',sans-serif", background: '#f1f5f9', fontSize: 14 }}>
       <Sidebar current={screen} navigate={navigate} user={user} />
       <div style={{ flex: 1, overflowY: 'auto' }}>
+        {screen === 'dashboard' && <DashboardScreen />}
         {screen === 'incidencias' && <IncidenciasScreen />}
+        {screen === 'registrar' && <RegistrarScreen />}
+        {screen === 'seguimiento' && <SeguimientoScreen />}
+        {screen === 'ranking' && <RankingScreen />}
+        {screen === 'mensual' && <MensualScreen />}
       </div>
     </div>
   );
