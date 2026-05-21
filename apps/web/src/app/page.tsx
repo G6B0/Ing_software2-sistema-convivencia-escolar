@@ -257,7 +257,6 @@ function IncidenciasScreen() {
           fecha: form.fecha,
           descripcion: form.descripcion,
           gravedad: form.gravedad,
-          estado: 'Abierto',
           funcionarioResponsableId: form.funcionarioId,
           participantes: [
             {
@@ -359,8 +358,8 @@ function IncidenciasScreen() {
               >
                 <option value="">— Seleccionar —</option>
                 <option>Leve</option>
-                <option>Media</option>
-                <option>Alta</option>
+                <option>Moderado</option>
+                <option>Grave</option>
               </select>
               {errores.gravedad && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errores.gravedad}</span>}
             </Field>
