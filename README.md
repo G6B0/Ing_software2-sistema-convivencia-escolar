@@ -132,15 +132,117 @@ Referencia completa:
 
 ```text
 Ing_software2-sistema-convivencia-escolar/
-|-- apps/
-|   |-- api/   # Espacio reservado para la implementación del backend
-|   `-- web/   # Espacio reservado para la implementación de la interfaz web
-|-- Documentacion del proyecto/
-|   |-- C1-SystemContext-dark.png
-|   |-- C2-ContainerDiagram-dark.png
-|   |-- C3-BackendComponents-dark.png
-|   `-- requisitos_funcionales.md
-`-- README.md
+├── apps/
+│   ├── api/                    # Backend - API REST con Express
+│   │   ├── src/
+│   │   │   ├── app.js          # Configuración principal de Express
+│   │   │   ├── lib/            # Servicios y lógica de negocio
+│   │   │   └── prototipo-c3/   # Prototipo de componentes C3
+│   │   └── package.json
+│   │
+│   └── web/                    # Frontend - Next.js 14 con App Router
+│       ├── src/
+│       │   ├── app/            # Rutas de Next.js (App Router)
+│       │   │   ├── layout.tsx          # Layout compartido con Sidebar
+│       │   │   ├── page.tsx            # Página raíz (redirige a /dashboard)
+│       │   │   │
+│       │   │   ├── dashboard/          # Dashboard principal
+│       │   │   │   └── page.tsx
+│       │   │   │
+│       │   │   ├── incidencias/        # Gestión de incidencias
+│       │   │   │   └── page.tsx        # Lista, formulario y vistas
+│       │   │   │
+│       │   │   ├── registrar/          # Módulo de registro (vacío)
+│       │   │   │   └── page.tsx
+│       │   │   │
+│       │   │   ├── seguimiento/        # Seguimiento de casos
+│       │   │   │   ├── page.tsx        # Vista general
+│       │   │   │   └── [id]/           # Ruta dinámica
+│       │   │   │       └── page.tsx    # Detalle de incidente
+│       │   │   │
+│       │   │   ├── alumnos/            # Perfiles de alumnos
+│       │   │   │   └── [id]/           # Ruta dinámica
+│       │   │   │       └── page.tsx    # Perfil y estadísticas
+│       │   │   │
+│       │   │   ├── ranking/            # Ranking de cursos
+│       │   │   │   └── page.tsx
+│       │   │   │
+│       │   │   └── mensual/            # Reportes mensuales
+│       │   │       └── page.tsx
+│       │   │
+│       │   └── components/     # Componentes reutilizables
+│       │       ├── Sidebar.tsx  # Navegación lateral
+│       │       ├── Field.tsx    # Campo de formulario
+│       │       └── Btn.tsx      # Botón
+│       │
+│       └── package.json
+│
+├── Documentacion del proyecto/
+│   ├── C1-SystemContext-dark.png
+│   ├── C2-ContainerDiagram-dark.png
+│   ├── C3-BackendComponents-dark.png
+│   └── requisitos_funcionales.md
+│
+└── README.md
+```
+
+### Arquitectura del Frontend (Next.js)
+
+El frontend está construido con **Next.js 14** usando el **App Router**, que proporciona:
+
+#### Rutas Principales
+
+- **`/dashboard`** - Panel de control del sistema
+- **`/incidencias`** - Gestión completa de incidencias (formulario + tabla + cards)
+- **`/seguimiento`** - Vista general de seguimiento
+- **`/seguimiento/[id]`** - Detalle del seguimiento de un incidente específico
+- **`/alumnos/[id]`** - Perfil detallado del alumno con estadísticas e historial
+- **`/ranking`** - Ranking de cursos por incidencias
+- **`/mensual`** - Reportes mensuales
+- **`/registrar`** - Módulo de registro (pendiente de implementación)
+
+#### Rutas Dinámicas
+
+Las rutas dinámicas permiten URLs limpias y compartibles:
+
+- **`/seguimiento/INC-20260520-abc123`** - Acceso directo al seguimiento de un incidente
+- **`/alumnos/ALU-1001`** - Acceso directo al perfil de un alumno
+
+#### Componentes Reutilizables
+
+- **`Sidebar`** - Navegación lateral con Link de Next.js y resaltado automático
+- **`Field`** - Componente de campo de formulario con label y validaciones
+- **`Btn`** - Botón con variantes (primary, secondary, ghost) y tamaños
+
+#### Navegación
+
+La navegación se maneja mediante:
+
+- **`useRouter`** - Para navegación programática (onClick, redirects)
+- **`Link`** - Para navegación optimizada en el Sidebar
+- **`pathname`** - Para detectar la ruta activa y resaltar en el Sidebar
+
+#### Características de Next.js Implementadas
+
+- ✅ **App Router** - Sistema de rutas basado en carpetas
+- ✅ **Rutas Dinámicas** - `[id]` para parámetros variables
+- ✅ **Client Components** - `'use client'` para interactividad
+- ✅ **Layout Compartido** - Sidebar persiste en todas las páginas
+- ✅ **Metadata SEO** - Configuración de título y descripción
+- ✅ **TypeScript** - Tipado estático en toda la aplicación
+
+#### Integración API
+
+El frontend se conecta al backend mediante:
+
+```typescript
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+```
+
+Las peticiones se realizan con `fetch` nativo de JavaScript para:
+- Listar incidentes
+- Registrar nuevos incidentes
+- Obtener detalles de incidentes específicos
 ```
 
 ## Estado actual

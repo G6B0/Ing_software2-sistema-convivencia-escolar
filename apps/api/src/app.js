@@ -70,6 +70,15 @@ function crearApp({
     }
   })
 
+  app.get('/incidentes', async (req, res) => {
+    try {
+      const incidentes = await servicioIncidentes.listarIncidentes()
+      return res.json({ ok: true, data: incidentes })
+    } catch (error) {
+      return res.status(500).json({ ok: false, mensaje: 'No se pudieron obtener los incidentes.' })
+    }
+  })
+
   app.get('/incidentes/:incidenteId', async (req, res) => {
     const incidente = await servicioIncidentes.consultarIncidentePorId(req.params.incidenteId)
 
