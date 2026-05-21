@@ -85,7 +85,29 @@ class ServicioIncidentes {
   }
 
   async listarIncidentes() {
-    return await this.persistenciaSistema.listarIncidentes()
+    const incidentes = await this.persistenciaSistema.listarIncidentes()
+
+    // Enriquecer cada incidente con información de los alumnos
+    const incidentesEnriquecidos = incidentes.map((incidente) => {
+      const participantesEnriquecidos = (incidente.participantes || []).map((participante) => {
+        const alumno = this.servicioInstitucional.consultarAlumnoPorId(
+          participante.alumnoInstitucionalId
+        )
+
+        return {
+          ...participante,
+          nombreAlumno: alumno ? alumno.nombre : null,
+          curso: alumno ? alumno.curso : null,
+        }
+      })
+
+      return {
+        ...incidente,
+        participantes: participantesEnriquecidos,
+      }
+    })
+
+    return incidentesEnriquecidos
   }
 }
 
