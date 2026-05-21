@@ -89,7 +89,7 @@ class ServicioIncidentes {
 
     // Enriquecer cada incidente con información de los alumnos
     const incidentesEnriquecidos = incidentes.map((incidente) => {
-      const participantesEnriquecidos = incidente.participantes.map((participante) => {
+      const participantesEnriquecidos = (incidente.participantes || []).map((participante) => {
         const alumno = this.servicioInstitucional.consultarAlumnoPorId(
           participante.alumnoInstitucionalId
         )
