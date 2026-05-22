@@ -80,6 +80,34 @@ class ServicioIncidentes {
     return nuevoSeguimiento
   }
 
+  async obtenerHistorialSeguimientos(incidenteId, funcionarioSesionId) {
+    // 1. Validar que el incidente exista
+    const incidente = await this.consultarIncidentePorId(incidenteId)
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente consultado no existe.')
+    }
+
+    // 2. Validar que el funcionario exista (Preparando terreno para el Test 3)
+    const funcionario = this.servicioInstitucional.consultarFuncionario(funcionarioSesionId)
+    if (!funcionario) {
+      throw new ErrorValidacionSistema('El funcionario no tiene permisos o no existe.')
+    }
+
+    // 3. Obtener los seguimientos desde la base de datos
+    let seguimientos = await this.persistenciaSistema.consultarSeguimientosPorIncidente(incidenteId)
+
+    // 4. Test 2: Si no hay seguimientos, la BD podría devolver null o undefined.
+    // Lo convertimos a un arreglo vacío para que no explote y sea amigable.
+    if (!seguimientos) {
+      seguimientos = []
+    }
+
+    // 5. Test 1: Ordenar cronológicamente (del más antiguo al más nuevo)
+    seguimientos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+
+    return seguimientos
+  }
+
   consultarIncidentePorId(incidenteId) {
     return this.persistenciaSistema.consultarIncidentePorId(incidenteId)
   }
