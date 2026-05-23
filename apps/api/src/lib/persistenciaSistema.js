@@ -62,6 +62,10 @@ class PersistenciaSistemaMemoria {
     validarCamposRequeridos(datosIncidente, CAMPOS_INCIDENTE_REQUERIDOS, 'Incidente')
     validarParticipantes(datosIncidente.participantes)
 
+    if (!GRAVEDADES_INCIDENTE.has(datosIncidente.gravedad)) {
+      throw new ErrorValidacionSistema('La gravedad del incidente no es valida.')
+    }
+
     const incidente = {
       id: datosIncidente.id || crearId('INC'),
       titulo: datosIncidente.titulo,
@@ -183,6 +187,7 @@ module.exports = {
   CAMPOS_SEGUIMIENTO_REQUERIDOS,
   crearId,
   ESTADOS_INCIDENTE,
+  GRAVEDADES_INCIDENTE,
   PersistenciaSistemaMemoria,
   ROLES_PARTICIPANTE_INCIDENTE,
   validarCamposRequeridos,
