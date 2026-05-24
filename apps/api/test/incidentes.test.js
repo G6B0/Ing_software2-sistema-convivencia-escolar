@@ -438,10 +438,87 @@ test('US02: T03 Test 3: actualiza protocolo al modificar gravedad', async () => 
 
   const incidenteActualizado =
     await servicioIncidentes.actualizarGravedadIncidente(
-      incidente.id,
-      'Grave'
-    )
+    incidente.id,
+    'Grave',
+    'FUN-3001'
+  )
 
   assert.equal(incidenteActualizado.gravedad, 'Grave')
   assert.equal(incidenteActualizado.protocolo, 'PROTOCOLO_GRAVE')
+})
+
+test('US02: T04 Test 1: actualiza gravedad y protocolo correctamente', async () => {
+
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const actualizado =
+    await servicioIncidentes.actualizarGravedadIncidente(
+      incidente.id,
+      'Grave',
+      'FUN-3001'
+    )
+
+  assert.equal(actualizado.gravedad, 'Grave')
+
+  assert.equal(
+    actualizado.protocolo,
+    'PROTOCOLO_GRAVE'
+  )
+})
+
+test('US02: T04 Test 2: rechaza gravedad invalida', async () => {
+
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await assert.rejects(
+    () =>
+      servicioIncidentes.actualizarGravedadIncidente(
+        incidente.id,
+        'Urgente',
+        'FUN-3001'
+      ),
+    ErrorValidacionSistema
+  )
 })
