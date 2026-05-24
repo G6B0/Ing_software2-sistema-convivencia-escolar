@@ -90,9 +90,8 @@ class ServicioIncidentes {
   async actualizarGravedadIncidente(
     incidenteId,
     nuevaGravedad,
-    funcionarioSesionId
-  ) {
-
+    funcionarioSesionId) {
+      
     const funcionario =
       this.servicioInstitucional.consultarFuncionario(
         funcionarioSesionId
@@ -103,6 +102,17 @@ class ServicioIncidentes {
         'El funcionario responsable no existe.'
       )
     }
+
+    const incidente =
+      await this.consultarIncidentePorId(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema(
+        'El incidente no existe.'
+      )
+    }
+
+    const gravedadAnterior = incidente.gravedad
 
     const protocolos = {
       Leve: 'PROTOCOLO_LEVE',
@@ -118,11 +128,29 @@ class ServicioIncidentes {
       )
     }
 
-    return this.persistenciaSistema.actualizarGravedadIncidente(
-      incidenteId,
-      nuevaGravedad,
-      protocolo
-    )
+    // Si la gravedad no cambia, no registrar auditoría
+    if (gravedadAnterior === nuevaGravedad) {
+      return incidente
+    }
+
+    const incidenteActualizado =
+      await this.persistenciaSistema.actualizarGravedadIncidente(
+        incidenteId,
+        nuevaGravedad,
+        protocolo
+      )
+
+    await this.persistenciaSistema.guardarAuditoria({
+      accion: 'CAMBIO_GRAVEDAD',
+      fecha: new Date().toISOString(),
+      funcionarioResponsableId: funcionario.id,
+      entidad: 'incidente',
+      identificadorRelacionado: incidenteId,
+      gravedadAnterior,
+      gravedadNueva: nuevaGravedad,
+    })
+
+    return incidenteActualizado
   }
 
   async obtenerHistorialSeguimientos(incidenteId, funcionarioSesionId) {
