@@ -87,7 +87,23 @@ class ServicioIncidentes {
     return nuevoSeguimiento
   }
 
-  async actualizarGravedadIncidente(incidenteId, nuevaGravedad) {
+  async actualizarGravedadIncidente(
+    incidenteId,
+    nuevaGravedad,
+    funcionarioSesionId
+  ) {
+
+    const funcionario =
+      this.servicioInstitucional.consultarFuncionario(
+        funcionarioSesionId
+      )
+
+    if (!funcionario) {
+      throw new ErrorValidacionSistema(
+        'El funcionario responsable no existe.'
+      )
+    }
+
     const protocolos = {
       Leve: 'PROTOCOLO_LEVE',
       Moderado: 'PROTOCOLO_MODERADO',
@@ -95,6 +111,12 @@ class ServicioIncidentes {
     }
 
     const protocolo = protocolos[nuevaGravedad]
+
+    if (!protocolo) {
+      throw new ErrorValidacionSistema(
+        'La gravedad del incidente no es valida.'
+      )
+    }
 
     return this.persistenciaSistema.actualizarGravedadIncidente(
       incidenteId,
