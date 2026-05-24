@@ -1,6 +1,7 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 
+
 const { ErrorValidacionSistema } = require('../src/lib/erroresSistema')
 const ServicioIncidentes = require('../src/lib/servicioIncidentes')
 const ServicioInstitucional = require('../src/lib/servicioInstitucional')
@@ -356,4 +357,91 @@ test('US02: T02 Test 3: rechaza incidente sin gravedad', async () => {
   const incidentes = await persistenciaSistema.listarIncidentes()
 
   assert.equal(incidentes.length, 0)
+})
+
+test('US02: T03 Test 1: asocia protocolo correcto al asignar gravedad leve', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Empujon en pasillo',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  assert.equal(incidente.protocolo, 'PROTOCOLO_LEVE')
+})
+
+test('US02: T03 Test 2: asocia protocolo correcto al asignar gravedad grave', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Pelea grave',
+    fecha: '2025-05-20',
+    descripcion: 'Agresion fisica fuerte',
+    gravedad: 'Grave',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  assert.equal(incidente.protocolo, 'PROTOCOLO_GRAVE')
+})
+
+test('US02: T03 Test 3: actualiza protocolo al modificar gravedad', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto menor',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const incidenteActualizado =
+    await servicioIncidentes.actualizarGravedadIncidente(
+      incidente.id,
+      'Grave'
+    )
+
+  assert.equal(incidenteActualizado.gravedad, 'Grave')
+  assert.equal(incidenteActualizado.protocolo, 'PROTOCOLO_GRAVE')
 })
