@@ -522,3 +522,89 @@ test('US02: T04 Test 2: rechaza gravedad invalida', async () => {
     ErrorValidacionSistema
   )
 })
+
+test('US02: T05 Test 1: registra evento de cambio de gravedad en auditoria', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await servicioIncidentes.actualizarGravedadIncidente(
+    incidente.id,
+    'Grave',
+    'FUN-3001'
+  )
+
+  const auditorias =
+    await persistenciaSistema.consultarAuditoriasPorIncidente(
+      incidente.id
+    )
+
+  const auditoria = auditorias.find(
+    (a) => a.accion === 'CAMBIO_GRAVEDAD'
+  )
+
+  assert.ok(auditoria)
+  assert.equal(auditoria.gravedadAnterior, 'Leve')
+  assert.equal(auditoria.gravedadNueva, 'Grave')
+  assert.equal(
+    auditoria.funcionarioResponsableId,
+    'FUN-3001'
+  )
+})
+
+test('US02: T05 Test 2: no registra auditoria si la gravedad no cambia', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await servicioIncidentes.actualizarGravedadIncidente(
+    incidente.id,
+    'Leve',
+    'FUN-3001'
+  )
+
+  const auditorias =
+    await persistenciaSistema.consultarAuditoriasPorIncidente(
+      incidente.id
+    )
+
+  const cambiosGravedad = auditorias.filter(
+    (a) => a.accion === 'CAMBIO_GRAVEDAD'
+  )
+
+  assert.equal(cambiosGravedad.length, 0)
+})

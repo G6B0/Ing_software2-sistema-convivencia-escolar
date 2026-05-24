@@ -103,15 +103,23 @@ class PersistenciaSistemaMemoria {
     }
   }
 
-  async actualizarGravedadIncidente(incidenteId, nuevaGravedad, protocolo) {
+  async actualizarGravedadIncidente(
+    incidenteId,
+    nuevaGravedad,
+    protocolo
+  ) {
     const incidente = this.incidentes.get(incidenteId)
 
     if (!incidente) {
-      throw new ErrorValidacionSistema('El incidente no existe.')
+      throw new ErrorValidacionSistema(
+        'El incidente no existe.'
+      )
     }
 
     if (!GRAVEDADES_INCIDENTE.has(nuevaGravedad)) {
-      throw new ErrorValidacionSistema('La gravedad del incidente no es valida.')
+      throw new ErrorValidacionSistema(
+        'La gravedad del incidente no es valida.'
+      )
     }
 
     incidente.gravedad = nuevaGravedad
@@ -152,20 +160,23 @@ class PersistenciaSistemaMemoria {
   async guardarAuditoria(datosAuditoria) {
     validarCamposRequeridos(
       datosAuditoria,
-      ['accion', 'fecha', 'funcionarioResponsableId', 'entidad', 'identificadorRelacionado'],
+      [
+        'accion',
+        'fecha',
+        'funcionarioResponsableId',
+        'entidad',
+        'identificadorRelacionado',
+      ],
       'Auditoria'
     )
 
     const auditoria = {
       id: datosAuditoria.id || crearId('AUD'),
-      accion: datosAuditoria.accion,
-      fecha: datosAuditoria.fecha,
-      funcionarioResponsableId: datosAuditoria.funcionarioResponsableId,
-      entidad: datosAuditoria.entidad,
-      identificadorRelacionado: datosAuditoria.identificadorRelacionado,
+      ...datosAuditoria,
     }
 
     this.auditorias.set(auditoria.id, auditoria)
+
     return auditoria
   }
 
