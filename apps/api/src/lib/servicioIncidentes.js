@@ -1,5 +1,11 @@
 const { ErrorValidacionSistema } = require('./erroresSistema')
 
+const PROTOCOLOS_POR_GRAVEDAD = {
+  Leve: 'PROTOCOLO_LEVE',
+  Moderado: 'PROTOCOLO_MODERADO',
+  Grave: 'PROTOCOLO_GRAVE',
+}
+
 class ServicioIncidentes {
   constructor({ persistenciaSistema, servicioInstitucional }) {
     this.persistenciaSistema = persistenciaSistema
@@ -29,6 +35,7 @@ class ServicioIncidentes {
       }
     })
 
+    datosIncidente.protocolo = PROTOCOLOS_POR_GRAVEDAD[datosIncidente.gravedad]
     const incidente = await this.persistenciaSistema.guardarIncidente(datosIncidente)
 
     await this.persistenciaSistema.guardarAuditoria({
@@ -78,6 +85,22 @@ class ServicioIncidentes {
     })
 
     return nuevoSeguimiento
+  }
+
+  async actualizarGravedadIncidente(incidenteId, nuevaGravedad) {
+    const protocolos = {
+      Leve: 'PROTOCOLO_LEVE',
+      Moderado: 'PROTOCOLO_MODERADO',
+      Grave: 'PROTOCOLO_GRAVE',
+    }
+
+    const protocolo = protocolos[nuevaGravedad]
+
+    return this.persistenciaSistema.actualizarGravedadIncidente(
+      incidenteId,
+      nuevaGravedad,
+      protocolo
+    )
   }
 
   async obtenerHistorialSeguimientos(incidenteId, funcionarioSesionId) {

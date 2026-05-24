@@ -15,6 +15,11 @@ const GRAVEDADES_INCIDENTE = new Set([
   'Moderado',
   'Grave',
 ])
+const PROTOCOLOS_POR_GRAVEDAD = {
+  Leve: 'PROTOCOLO_LEVE',
+  Moderado: 'PROTOCOLO_MODERADO',
+  Grave: 'PROTOCOLO_GRAVE',
+}
 const ROLES_PARTICIPANTE_INCIDENTE = new Set(['Agresor', 'Victima', 'Testigo', 'Involucrado'])
 const CAMPOS_SEGUIMIENTO_REQUERIDOS = [
   'incidenteId',
@@ -65,13 +70,14 @@ class PersistenciaSistemaMemoria {
     if (!GRAVEDADES_INCIDENTE.has(datosIncidente.gravedad)) {
       throw new ErrorValidacionSistema('La gravedad del incidente no es valida.')
     }
-
+    const protocolo = PROTOCOLOS_POR_GRAVEDAD[datosIncidente.gravedad]
     const incidente = {
       id: datosIncidente.id || crearId('INC'),
       titulo: datosIncidente.titulo,
       fecha: datosIncidente.fecha,
       descripcion: datosIncidente.descripcion,
       gravedad: datosIncidente.gravedad,
+      protocolo: datosIncidente.protocolo,
       estado: 'Abierto',
       funcionarioResponsableId: datosIncidente.funcionarioResponsableId,
       creadoEn: datosIncidente.creadoEn || new Date().toISOString(),
@@ -95,6 +101,25 @@ class PersistenciaSistemaMemoria {
       ...incidente,
       participantes,
     }
+  }
+
+  async actualizarGravedadIncidente(incidenteId, nuevaGravedad, protocolo) {
+    const incidente = this.incidentes.get(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente no existe.')
+    }
+
+    if (!GRAVEDADES_INCIDENTE.has(nuevaGravedad)) {
+      throw new ErrorValidacionSistema('La gravedad del incidente no es valida.')
+    }
+
+    incidente.gravedad = nuevaGravedad
+    incidente.protocolo = protocolo
+
+    this.incidentes.set(incidenteId, incidente)
+
+    return incidente
   }
 
   async consultarIncidentePorId(incidenteId) {
@@ -188,6 +213,7 @@ module.exports = {
   crearId,
   ESTADOS_INCIDENTE,
   GRAVEDADES_INCIDENTE,
+  PROTOCOLOS_POR_GRAVEDAD,
   PersistenciaSistemaMemoria,
   ROLES_PARTICIPANTE_INCIDENTE,
   validarCamposRequeridos,
