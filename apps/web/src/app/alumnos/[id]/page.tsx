@@ -1,17 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Btn from '@/components/Btn';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default function AlumnoPerfilPage({ params }: PageProps) {
+export default function AlumnoPerfilPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
   const [incidentes, setIncidentes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

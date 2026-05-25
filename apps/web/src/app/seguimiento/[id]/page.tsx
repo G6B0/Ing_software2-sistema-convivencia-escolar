@@ -1,16 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default function SeguimientoIncidentePage({ params }: PageProps) {
+export default function SeguimientoIncidentePage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
   const [incidente, setIncidente] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 

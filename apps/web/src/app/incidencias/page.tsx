@@ -4,6 +4,7 @@ import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Field from '@/components/Field';
 import Btn from '@/components/Btn';
+import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -41,6 +42,7 @@ interface Mensaje {
 
 export default function IncidenciasPage() {
   const router = useRouter();
+  const [funcionarioSesion, setFuncionarioSesion] = useState<SesionUsuario['funcionario'] | null>(null);
 
   // Estados para formulario
   const [form, setForm] = useState<FormData>({
@@ -126,6 +128,18 @@ export default function IncidenciasPage() {
   };
 
   useEffect(() => {
+    try {
+      const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      const sesion = sesionGuardada ? JSON.parse(sesionGuardada) as SesionUsuario : null;
+
+      if (sesion?.funcionario) {
+        setFuncionarioSesion(sesion.funcionario);
+        setForm(f => ({ ...f, funcionarioId: sesion.funcionario.id }));
+      }
+    } catch {
+      setFuncionarioSesion(null);
+    }
+
     cargarIncidentes();
   }, []);
 
@@ -168,7 +182,7 @@ export default function IncidenciasPage() {
       fecha: '',
       descripcion: '',
       gravedad: '',
-      funcionarioId: ''
+      funcionarioId: funcionarioSesion?.id || ''
     });
     setParticipantes([]);
     setErrores({});
@@ -305,11 +319,13 @@ export default function IncidenciasPage() {
               <input
                 style={{ ...fld, borderColor: errores.funcionarioId ? '#dc2626' : '#e2e8f0' }}
                 value={form.funcionarioId}
-                onChange={e => set('funcionarioId', e.target.value)}
-                placeholder="Ej: FUN-3001"
+                readOnly
+                placeholder="Funcionario autenticado"
               />
               {errores.funcionarioId && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errores.funcionarioId}</span>}
-              <span style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>IDs de prueba: FUN-3001, FUN-3002, FUN-3003</span>
+              <span style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                {funcionarioSesion ? `Sesion activa: ${funcionarioSesion.nombre} (${funcionarioSesion.rol})` : 'Debe iniciar sesion para asociar el funcionario responsable'}
+              </span>
             </Field>
           </div>
 
