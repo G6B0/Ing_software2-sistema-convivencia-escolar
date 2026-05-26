@@ -131,33 +131,88 @@ export default function SeguimientoIncidentePage() {
         </p>
       </div>
 
-      {/* Mensaje en desarrollo */}
+      {/* Detalle para seguimiento */}
       <div style={{
         background: '#fff',
         borderRadius: 12,
         border: '1px solid #e2e8f0',
-        padding: 60,
-        textAlign: 'center'
+        padding: '24px 28px'
       }}>
+        <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#0f172a' }}>
+          Detalle del Incidente
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Alumno</div>
+            <div style={{ fontSize: 14, color: '#0f172a' }}>
+              {incidente.alumno?.nombre ?? 'No especificado'}
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+              {incidente.alumno?.id ?? ''}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Curso</div>
+            <div style={{ fontSize: 14, color: '#0f172a' }}>
+              {incidente.alumno?.curso ?? 'No especificado'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Funcionario Responsable</div>
+            <div style={{ fontSize: 14, color: '#0f172a' }}>
+              {incidente.funcionarioResponsable?.nombre ?? incidente.funcionarioResponsableId ?? 'No especificado'}
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+              {incidente.funcionarioResponsable?.rol ?? ''}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Reportado por</div>
+            <div style={{ fontSize: 14, color: '#0f172a' }}>
+              {incidente.reportadoPor ?? 'No especificado'}
+            </div>
+          </div>
+        </div>
+
+        {/* Confirmacion para continuar */}
         <div style={{
-          width: 80,
-          height: 80,
-          borderRadius: '50%',
-          background: '#fef3c7',
+          background: '#f8fafc',
+          borderRadius: 8,
+          border: '1px solid #e2e8f0',
+          padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 20px',
-          fontSize: 40
+          justifyContent: 'space-between',
+          gap: 16
         }}>
-          <i className="bi bi-tools" style={{ color: '#92400e' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="bi bi-info-circle" style={{ color: '#3b82f6', fontSize: 18 }} />
+            <span style={{ fontSize: 14, color: '#475569' }}>
+              El seguimiento quedara asociado al incidente <strong>{incidente.id}</strong>.
+            </span>
+          </div>
+          <button
+            onClick={() => router.push(`/seguimiento/${incidente.id}/registrar`)}
+            style={{
+              padding: '10px 20px',
+              background: '#0f172a',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <i className="bi bi-plus-circle" />
+            Registrar accion de seguimiento
+          </button>
         </div>
-        <h2 style={{ margin: '0 0 12px', fontSize: 20, fontWeight: 700, color: '#0f172a' }}>
-          Funcionalidad en Desarrollo
-        </h2>
-        <p style={{ margin: 0, fontSize: 14, color: '#64748b', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
-          A agarrar la pala Rogelios 🪏😈
-        </p>
       </div>
 
       {/* Información básica del incidente */}
