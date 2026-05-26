@@ -5,9 +5,10 @@ import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   user: { name: string; role: string };
+  onLogout?: () => void;
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname();
 
   const items = [
@@ -76,6 +77,17 @@ export default function Sidebar({ user }: SidebarProps) {
           );
         })}
       </nav>
+      {onLogout && (
+        <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button
+            onClick={onLogout}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontFamily: 'inherit', fontSize: 14, textAlign: 'left' }}
+          >
+            <i className="bi bi-box-arrow-left" style={{ fontSize: 16 }} />
+            Cerrar sesion
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -44,8 +44,10 @@ class ServicioIncidentes {
   }
 
   async registrarSeguimiento(incidenteId, datosSeguimiento, funcionarioSesionId) {
-    if (!datosSeguimiento.descripcion || datosSeguimiento.descripcion.trim() === '') {
-      throw new ErrorValidacionSistema('La descripción del seguimiento es obligatoria.')
+    const accionSeguimiento = datosSeguimiento.accion || datosSeguimiento.descripcion
+
+    if (!accionSeguimiento || accionSeguimiento.trim() === '') {
+      throw new ErrorValidacionSistema('La accion o descripcion del seguimiento es obligatoria.')
     }
     
     if (!datosSeguimiento.fecha || datosSeguimiento.fecha.trim() === '') {
@@ -66,6 +68,7 @@ class ServicioIncidentes {
 
     const nuevoSeguimiento = await this.persistenciaSistema.guardarSeguimiento({
       ...datosSeguimiento,
+      accion: accionSeguimiento,
       incidenteId,
       funcionarioResponsableId: funcionario.id,
     })

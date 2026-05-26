@@ -1,46 +1,44 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function SeguimientoIncidentePage({ params }: PageProps) {
-  const { id } = React.use(params);
+export default function SeguimientoIncidentePage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params.id;
   const [incidente, setIncidente] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-const [protocolos, setProtocolos] = useState<Record<string, string>>({});
+  const [protocolos, setProtocolos] = useState<Record<string, string>>({});
 
-useEffect(() => {
-  fetch(`${API_URL}/institucional/protocolos`)
-    .then(r => r.json())
-    .then(data => { if (data.ok) setProtocolos(data.data) })
-    .catch(() => {});
-}, []);
+  useEffect(() => {
+    fetch(`${API_URL}/institucional/protocolos`)
+      .then(r => r.json())
+      .then(data => { if (data.ok) setProtocolos(data.data) })
+      .catch(() => {});
+  }, []);
 
-useEffect(() => {
-  const cargarIncidente = async () => {
-    try {
-      const response = await fetch(`${API_URL}/incidentes/${id}`);
-      if (response.ok) {
-        const resultado = await response.json();
-        if (resultado.ok) {
-          setIncidente(resultado.data);
+  useEffect(() => {
+    const cargarIncidente = async () => {
+      try {
+        const response = await fetch(`${API_URL}/incidentes/${id}`);
+        if (response.ok) {
+          const resultado = await response.json();
+          if (resultado.ok) {
+            setIncidente(resultado.data);
+          }
         }
+      } catch (error) {
+        console.error('Error al cargar incidente:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error al cargar incidente:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  cargarIncidente();
-}, [id]);
+    cargarIncidente();
+  }, [id]);
   const formatearFecha = (fecha: string) => {
     try {
       if (!fecha) return 'Sin fecha';
