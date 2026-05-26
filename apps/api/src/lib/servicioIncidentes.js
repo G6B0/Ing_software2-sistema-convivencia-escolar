@@ -44,15 +44,24 @@ class ServicioIncidentes {
   }
 
   async registrarSeguimiento(incidenteId, datosSeguimiento, funcionarioSesionId) {
-    const accionSeguimiento = datosSeguimiento.accion || datosSeguimiento.descripcion
-
-    if (!accionSeguimiento || accionSeguimiento.trim() === '') {
-      throw new ErrorValidacionSistema('La accion o descripcion del seguimiento es obligatoria.')
-    }
     
-    if (!datosSeguimiento.fecha || datosSeguimiento.fecha.trim() === '') {
-      throw new ErrorValidacionSistema('La fecha del seguimiento es obligatoria.')
+    // --- VALIDACIONES ESTRICTAS (TAREA 5465) ---
+    if (!datosSeguimiento.descripcion || datosSeguimiento.descripcion.trim() === '') {
+      throw new ErrorValidacionSistema('La descripción del seguimiento es obligatoria.');
     }
+
+    if (!datosSeguimiento.accion || datosSeguimiento.accion.trim() === '') {
+      throw new ErrorValidacionSistema('La acción del seguimiento es obligatoria.');
+    }
+
+    if (!datosSeguimiento.evolucionCaso || datosSeguimiento.evolucionCaso.trim() === '') {
+      throw new ErrorValidacionSistema('La evolución del caso es obligatoria.');
+    }
+
+    if (!datosSeguimiento.fecha || datosSeguimiento.fecha.trim() === '') {
+      throw new ErrorValidacionSistema('La fecha del seguimiento es obligatoria.');
+    }
+    // ------------------------------------------
 
     const incidente = await this.consultarIncidentePorId(incidenteId)
 
@@ -68,7 +77,7 @@ class ServicioIncidentes {
 
     const nuevoSeguimiento = await this.persistenciaSistema.guardarSeguimiento({
       ...datosSeguimiento,
-      accion: accionSeguimiento,
+      accion: datosSeguimiento.accion,
       incidenteId,
       funcionarioResponsableId: funcionario.id,
     })
