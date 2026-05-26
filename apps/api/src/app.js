@@ -65,6 +65,10 @@ function crearApp({
     return res.json({ ok: true, data: funcionario })
   })
 
+  app.get('/institucional/protocolos', (req, res) => {
+    return res.json({ ok: true, data: servicioInstitucional.protocolos })
+  })
+
   app.post('/incidentes', async (req, res) => {
     try {
       const incidente = await servicioIncidentes.registrarIncidente(req.body)

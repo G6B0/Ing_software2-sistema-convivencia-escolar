@@ -383,7 +383,7 @@ test('US02: T03 Test 1: asocia protocolo correcto al asignar gravedad leve', asy
     ],
   })
 
-  assert.equal(incidente.protocolo, 'PROTOCOLO_LEVE')
+  assert.equal(incidente.protocolo, servicioInstitucional.consultarProtocolo('Leve'))
 })
 
 test('US02: T03 Test 2: asocia protocolo correcto al asignar gravedad grave', async () => {
@@ -409,7 +409,7 @@ test('US02: T03 Test 2: asocia protocolo correcto al asignar gravedad grave', as
     ],
   })
 
-  assert.equal(incidente.protocolo, 'PROTOCOLO_GRAVE')
+  assert.equal(incidente.protocolo, servicioInstitucional.consultarProtocolo('Grave'))
 })
 
 test('US02: T03 Test 3: actualiza protocolo al modificar gravedad', async () => {
@@ -444,7 +444,7 @@ test('US02: T03 Test 3: actualiza protocolo al modificar gravedad', async () => 
   )
 
   assert.equal(incidenteActualizado.gravedad, 'Grave')
-  assert.equal(incidenteActualizado.protocolo, 'PROTOCOLO_GRAVE')
+  assert.equal(incidenteActualizado.protocolo, servicioInstitucional.consultarProtocolo('Grave'))
 })
 
 test('US02: T04 Test 1: actualiza gravedad y protocolo correctamente', async () => {
@@ -483,7 +483,7 @@ test('US02: T04 Test 1: actualiza gravedad y protocolo correctamente', async () 
 
   assert.equal(
     actualizado.protocolo,
-    'PROTOCOLO_GRAVE'
+    servicioInstitucional.consultarProtocolo('Grave')
   )
 })
 

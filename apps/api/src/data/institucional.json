@@ -248,5 +248,9 @@
       "correoInstitucional": "sebastian.torres@colegio.cl",
       "rol": "inspector"
     }
-  ]
+  ],"protocolos": {
+    "Leve": "Registrar observación y realizar seguimiento preventivo.",
+    "Moderado": "Notificar al inspector y contactar al apoderado.",
+    "Grave": "Pal SENAME"
+  }
 }

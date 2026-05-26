@@ -69,7 +69,7 @@ const actualizarGravedadIncidente = async (req, res) => {
         error: error.message,
       })
     }
-
+    console.error(error)
     return res.status(500).json({
       error: 'Error interno del servidor',
     })
