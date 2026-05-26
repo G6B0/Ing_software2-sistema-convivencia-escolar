@@ -17,6 +17,7 @@ class ServicioInstitucional {
         funcionario,
       ])
     )
+    this.protocolos = datosInstitucionales.protocolos
   }
 
   consultarAlumnoPorId(alumnoId) {
@@ -52,6 +53,9 @@ class ServicioInstitucional {
       this.funcionariosPorCorreo.get(String(identificadorOCorreo).toLowerCase())
 
     return funcionario || null
+  }
+  consultarProtocolo(gravedad) {
+    return this.protocolos[gravedad] || null
   }
 }
 

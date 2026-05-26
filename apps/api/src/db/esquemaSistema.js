@@ -68,6 +68,13 @@ const esquemaSistema = {
       identificadorRelacionado: { tipo: 'string', requerido: true },
     },
   },
+  protocolos: {
+    descripcion: 'Protocolos de acción según gravedad del incidente.',
+    campos: {
+      gravedad: { tipo: 'string', requerido: true, unico: true, valoresPermitidos: ['Leve', 'Moderado', 'Grave'] },
+      descripcion: { tipo: 'string', requerido: true },
+    },
+  },
 }
 
 const tablasDelSistema = Object.freeze(Object.keys(esquemaSistema))

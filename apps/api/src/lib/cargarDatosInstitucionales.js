@@ -45,7 +45,8 @@ function validarEstructuraInstitucional(datos) {
   const tieneEstructuraValida =
     datos &&
     typeof datos === 'object' &&
-    secciones.every((seccion) => Array.isArray(datos[seccion]))
+    secciones.every((seccion) => Array.isArray(datos[seccion])) &&
+    typeof datos.protocolos === 'object'
 
   if (!tieneEstructuraValida) {
     throw new ErrorFuenteInstitucional(
