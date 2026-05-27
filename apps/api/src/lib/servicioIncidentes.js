@@ -213,12 +213,38 @@ class ServicioIncidentes {
               rol: funcionario.rol,
             }
           : null,
+        funcionarioNombre: funcionario ? funcionario.nombre : null,
       }
     })
   }
 
-  consultarIncidentePorId(incidenteId) {
-    return this.persistenciaSistema.consultarIncidentePorId(incidenteId)
+  async consultarIncidentePorId(incidenteId) {
+    const incidente = await this.persistenciaSistema.consultarIncidentePorId(incidenteId)
+
+    if (!incidente) return null
+
+    const participantesEnriquecidos = (incidente.participantes || []).map((participante) => {
+      const alumno = this.servicioInstitucional.consultarAlumnoPorId(
+        participante.alumnoInstitucionalId
+      )
+      return {
+        ...participante,
+        nombreAlumno: alumno ? alumno.nombre : null,
+        curso: alumno ? alumno.curso : null,
+      }
+    })
+
+    const funcionario = this.servicioInstitucional.consultarFuncionario(
+      incidente.funcionarioResponsableId
+    )
+
+    return {
+      ...incidente,
+      participantes: participantesEnriquecidos,
+      funcionarioResponsable: funcionario
+        ? { nombre: funcionario.nombre, rol: funcionario.rol }
+        : null,
+    }
   }
 
   async listarIncidentes() {

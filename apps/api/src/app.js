@@ -65,6 +65,16 @@ function crearApp({
     return res.json({ ok: true, data: funcionario })
   })
 
+  app.get('/institucional/cursos', (req, res) => {
+    const cursos = servicioInstitucional.listarCursos()
+    return res.json({ ok: true, data: cursos })
+  })
+
+  app.get('/institucional/cursos/:curso/alumnos', (req, res) => {
+    const alumnos = servicioInstitucional.listarAlumnosPorCurso(req.params.curso)
+    return res.json({ ok: true, data: alumnos })
+  })
+
   app.get('/institucional/protocolos', (req, res) => {
     return res.json({ ok: true, data: servicioInstitucional.protocolos })
   })
