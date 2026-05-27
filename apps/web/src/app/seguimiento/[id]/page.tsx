@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const SESSION_STORAGE_KEY = 'sce_sesion';
 
 export default function SeguimientoIncidentePage() {
   const router = useRouter();
@@ -12,6 +13,29 @@ export default function SeguimientoIncidentePage() {
   const [incidente, setIncidente] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [protocolos, setProtocolos] = useState<Record<string, string>>({});
+
+  // Seguimientos
+  const [seguimientos, setSeguimientos] = useState<any[]>([]);
+  const [loadingSeguimientos, setLoadingSeguimientos] = useState(true);
+
+  // Formulario nueva acción
+  const [accion, setAccion] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [evolucionCaso, setEvolucionCaso] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  // Sesión del funcionario
+  const [funcionarioId, setFuncionarioId] = useState('');
+
+  useEffect(() => {
+    try {
+      const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      if (sesionGuardada) {
+        const sesion = JSON.parse(sesionGuardada);
+        setFuncionarioId(sesion.funcionario?.id || '');
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     fetch(`${API_URL}/institucional/protocolos`)
@@ -39,6 +63,28 @@ export default function SeguimientoIncidentePage() {
 
     cargarIncidente();
   }, [id]);
+
+  const cargarSeguimientos = async () => {
+    try {
+      setLoadingSeguimientos(true);
+      const response = await fetch(`${API_URL}/incidentes/${id}/seguimientos`, {
+        headers: { 'x-funcionario-id': funcionarioId || 'FUN-3001' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSeguimientos(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error al cargar seguimientos:', error);
+    } finally {
+      setLoadingSeguimientos(false);
+    }
+  };
+
+  useEffect(() => {
+    if (id) cargarSeguimientos();
+  }, [id, funcionarioId]);
+
   const formatearFecha = (fecha: string) => {
     try {
       if (!fecha) return 'Sin fecha';
@@ -127,7 +173,7 @@ export default function SeguimientoIncidentePage() {
           Seguimiento de Incidente
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 14, color: '#64748b' }}>
-          ID: {incidente.id} • Fecha: {formatearFecha(incidente.fecha)}
+          Fecha: {formatearFecha(incidente.fecha)}
         </p>
       </div>
 
@@ -143,34 +189,37 @@ export default function SeguimientoIncidentePage() {
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Alumno</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>
-              {incidente.alumno?.nombre ?? 'No especificado'}
-            </div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-              {incidente.alumno?.id ?? ''}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Curso</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>
-              {incidente.alumno?.curso ?? 'No especificado'}
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Participantes</div>
+            {incidente.participantes?.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {incidente.participantes.map((p: any, i: number) => (
+                  <div key={i} style={{ fontSize: 14, color: '#0f172a' }}>
+                    {p.nombreAlumno || p.alumnoInstitucionalId}
+                    <span style={{ fontSize: 12, color: '#64748b', marginLeft: 6 }}>
+                      ({p.rolEnIncidente})
+                    </span>
+                    {p.curso && (
+                      <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 6 }}>
+                        - {p.curso}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 14, color: '#0f172a' }}>No especificado</div>
+            )}
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Funcionario Responsable</div>
             <div style={{ fontSize: 14, color: '#0f172a' }}>
               {incidente.funcionarioResponsable?.nombre ?? incidente.funcionarioResponsableId ?? 'No especificado'}
             </div>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-              {incidente.funcionarioResponsable?.rol ?? ''}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Reportado por</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>
-              {incidente.reportadoPor ?? 'No especificado'}
-            </div>
+            {incidente.funcionarioResponsable?.rol && (
+              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                {incidente.funcionarioResponsable.rol}
+              </div>
+            )}
           </div>
         </div>
 
@@ -215,34 +264,6 @@ export default function SeguimientoIncidentePage() {
         </div>
       </div>
 
-      {/* Información básica del incidente */}
-      <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#0f172a' }}>
-          Información del Incidente
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Título</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>{incidente.titulo}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Gravedad</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>{incidente.gravedad}</div>
-          </div>
-          <div style={{ gridColumn: '1/-1' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Descripción</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>{incidente.descripcion}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Estado</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>{incidente.estado}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Funcionario Responsable</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>{incidente.funcionarioResponsableId}</div>
-          </div>
-        </div>
-      </div>
         {/* Cambiar gravedad */}
         <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Cambiar gravedad:</span>
@@ -260,7 +281,7 @@ export default function SeguimientoIncidentePage() {
               try {
                 const response = await fetch(`${API_URL}/incidentes/${incidente.id}/gravedad`, {
                   method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json', 'x-funcionario-id': 'FUN-3001' },
+                  headers: { 'Content-Type': 'application/json', 'x-funcionario-id': funcionarioId || 'FUN-3001' },
                   body: JSON.stringify({ gravedad: incidente.gravedad })
                 });
                 if (response.ok) {
@@ -292,6 +313,333 @@ export default function SeguimientoIncidentePage() {
               </div>
             );
           })()}
+
+      {/* Resumen del incidente */}
+      <div style={{ marginTop: 24, background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '28px 32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: '#4338ca', letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>
+              INCIDENTE · {formatearFecha(incidente.fecha)}
+            </p>
+            <h2 style={{ margin: '0 0 10px', fontSize: 24, fontWeight: 700, color: '#0f172a' }}>
+              {incidente.titulo}
+            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
+              {incidente.participantes?.map((p: any, i: number) => (
+                <span key={i} style={{ fontSize: 15, fontWeight: 600, color: '#0f172a' }}>
+                  {p.nombreAlumno || p.alumnoInstitucionalId}
+                  {p.curso && (
+                    <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 6 }}>{p.curso}</span>
+                  )}
+                  {p.rolEnIncidente && (() => {
+                    const rolColores: Record<string, { bg: string; color: string }> = {
+                      'Agresor': { bg: '#fee2e2', color: '#991b1b' },
+                      'Victima': { bg: '#dbeafe', color: '#1e40af' },
+                      'Víctima': { bg: '#dbeafe', color: '#1e40af' },
+                      'Testigo': { bg: '#f3e8ff', color: '#6b21a8' },
+                      'Denunciante': { bg: '#fef3c7', color: '#92400e' },
+                    };
+                    const r = rolColores[p.rolEnIncidente] || { bg: '#f1f5f9', color: '#475569' };
+                    return (
+                      <span style={{
+                        marginLeft: 6,
+                        padding: '1px 8px',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        background: r.bg,
+                        color: r.color
+                      }}>
+                        {p.rolEnIncidente}
+                      </span>
+                    );
+                  })()}
+                  {i < incidente.participantes.length - 1 && <span style={{ color: '#cbd5e1', marginLeft: 4 }}>·</span>}
+                </span>
+              ))}
+              {(() => {
+                const gravedadColores: Record<string, { bg: string; color: string }> = {
+                  'Leve': { bg: '#dcfce7', color: '#15803d' },
+                  'Moderado': { bg: '#fef3c7', color: '#92400e' },
+                  'Grave': { bg: '#fee2e2', color: '#991b1b' },
+                };
+                const g = gravedadColores[incidente.gravedad] || { bg: '#e2e8f0', color: '#475569' };
+                return (
+                  <span style={{
+                    padding: '3px 12px',
+                    borderRadius: 12,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    background: g.bg,
+                    color: g.color
+                  }}>
+                    {incidente.gravedad}
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
+              Estado actual
+            </label>
+            <select
+              value={incidente.estado}
+              onChange={(e) => setIncidente({ ...incidente, estado: e.target.value })}
+              style={{
+                padding: '12px 20px',
+                borderRadius: 10,
+                border: '1.5px solid #e2e8f0',
+                fontSize: 16,
+                fontFamily: 'inherit',
+                color: '#4338ca',
+                fontWeight: 600,
+                background: '#fff',
+                cursor: 'pointer',
+                minWidth: 220
+              }}
+            >
+              <option value="Abierto">Abierto</option>
+              <option value="En seguimiento">En seguimiento</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
+        </div>
+
+        {incidente.descripcion && (
+          <div style={{
+            marginTop: 16,
+            padding: '14px 20px',
+            background: '#f8fafc',
+            borderRadius: 10,
+            borderLeft: '3px solid #e2e8f0',
+            fontSize: 14,
+            color: '#475569',
+            lineHeight: 1.6
+          }}>
+            {incidente.descripcion}
+          </div>
+        )}
+      </div>
+
+      {/* Línea de tiempo del caso */}
+      <div style={{ marginTop: 24, background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '28px 32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="bi bi-card-checklist" style={{ color: '#4338ca', fontSize: 18 }} />
+            Linea de tiempo del caso
+          </h3>
+          {seguimientos.length > 0 && (
+            <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>
+              {seguimientos.length} {seguimientos.length === 1 ? 'accion' : 'acciones'}
+            </span>
+          )}
+        </div>
+
+        {loadingSeguimientos ? (
+          <div style={{ textAlign: 'center', padding: 20, color: '#64748b' }}>
+            <i className="bi bi-arrow-repeat" style={{ fontSize: 20, animation: 'spin 0.9s linear infinite' }} />
+            <p style={{ marginTop: 8, fontSize: 13 }}>Cargando seguimientos...</p>
+          </div>
+        ) : seguimientos.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8' }}>
+            <i className="bi bi-journal-text" style={{ fontSize: 28 }} />
+            <p style={{ marginTop: 8, fontSize: 14 }}>No hay acciones de seguimiento registradas aun.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {[...seguimientos].reverse().map((seg: any, idx: number) => (
+              <div key={seg.id || idx} style={{ display: 'flex', gap: 16, paddingBottom: idx < seguimientos.length - 1 ? 28 : 0 }}>
+                {/* Punto */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 6 }}>
+                  <div style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    background: idx === 0 ? '#4338ca' : '#1e3a5f',
+                    flexShrink: 0,
+                    boxShadow: idx === 0 ? '0 0 0 4px #c7d2fe' : 'none'
+                  }} />
+                  {idx < seguimientos.length - 1 && (
+                    <div style={{ width: 2, flex: 1, background: '#e2e8f0', marginTop: 6 }} />
+                  )}
+                </div>
+
+                {/* Contenido */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>
+                      {seg.accion}
+                    </span>
+                    <span style={{ fontSize: 13, color: '#94a3b8', flexShrink: 0, marginLeft: 12 }}>
+                      {formatearFecha(seg.fecha)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#4338ca', fontWeight: 500, marginBottom: 6 }}>
+                    {seg.funcionarioNombre ?? seg.funcionarioResponsableId}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 14, color: '#475569', lineHeight: 1.6 }}>
+                    {seg.descripcion}
+                  </p>
+                  {seg.evolucionCaso && (
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b', fontStyle: 'italic' }}>
+                      Evolucion: {seg.evolucionCaso}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Registrar nueva acción */}
+      <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px' }}>
+        <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <i className="bi bi-plus-circle" style={{ color: '#3b82f6' }} />
+          Registrar nueva accion
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
+              Accion realizada <span style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <input
+              type="text"
+              value={accion}
+              onChange={e => setAccion(e.target.value)}
+              placeholder="Ej: Citacion a apoderado, Mediacion escolar..."
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: 8,
+                border: '1.5px solid #e2e8f0',
+                fontSize: 14,
+                fontFamily: 'inherit',
+                color: '#0f172a',
+                outline: 'none',
+                boxSizing: 'border-box' as const
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
+              Evolucion del caso <span style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <select
+              value={evolucionCaso}
+              onChange={e => setEvolucionCaso(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: 8,
+                border: '1.5px solid #e2e8f0',
+                fontSize: 14,
+                fontFamily: 'inherit',
+                color: '#0f172a',
+                outline: 'none',
+                boxSizing: 'border-box' as const
+              }}
+            >
+              <option value="">Seleccionar...</option>
+              <option value="En progreso">En progreso</option>
+              <option value="Mejorando">Mejorando</option>
+              <option value="Sin cambios">Sin cambios</option>
+              <option value="Empeorando">Empeorando</option>
+              <option value="Resuelto">Resuelto</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
+            Notas y observaciones <span style={{ color: '#dc2626' }}>*</span>
+          </label>
+          <textarea
+            value={descripcion}
+            onChange={e => setDescripcion(e.target.value)}
+            placeholder="Describa las observaciones del seguimiento..."
+            rows={3}
+            style={{
+              width: '100%',
+              padding: '9px 12px',
+              borderRadius: 8,
+              border: '1.5px solid #e2e8f0',
+              fontSize: 14,
+              fontFamily: 'inherit',
+              color: '#0f172a',
+              outline: 'none',
+              resize: 'vertical' as const,
+              boxSizing: 'border-box' as const
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            disabled={enviando || !accion.trim() || !descripcion.trim() || !evolucionCaso}
+            onClick={async () => {
+              setEnviando(true);
+              try {
+                const response = await fetch(`${API_URL}/incidentes/${incidente.id}/seguimientos`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-funcionario-id': funcionarioId || 'FUN-3001'
+                  },
+                  body: JSON.stringify({
+                    accion: accion.trim(),
+                    descripcion: descripcion.trim(),
+                    evolucionCaso,
+                    fecha: new Date().toISOString().split('T')[0]
+                  })
+                });
+
+                if (response.ok) {
+                  setAccion('');
+                  setDescripcion('');
+                  setEvolucionCaso('');
+                  await cargarSeguimientos();
+                } else {
+                  const err = await response.json();
+                  alert(err.error || 'Error al registrar seguimiento');
+                }
+              } catch {
+                alert('Error de conexion');
+              } finally {
+                setEnviando(false);
+              }
+            }}
+            style={{
+              padding: '10px 20px',
+              background: (!accion.trim() || !descripcion.trim() || !evolucionCaso || enviando) ? '#94a3b8' : '#0f172a',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: (!accion.trim() || !descripcion.trim() || !evolucionCaso || enviando) ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            {enviando ? (
+              <>
+                <i className="bi bi-arrow-repeat" style={{ animation: 'spin 0.9s linear infinite' }} />
+                Registrando...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-check-circle" />
+                Registrar accion
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

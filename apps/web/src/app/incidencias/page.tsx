@@ -24,6 +24,13 @@ export default function IncidenciasPage() {
 
   const [incidentes, setIncidentes] = useState<any[]>([]);
   const [loadingIncidentes, setLoadingIncidentes] = useState(false);
+  const [cursos, setCursos] = useState<string[]>([]);
+
+  // Filtros
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroGravedad, setFiltroGravedad] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroCurso, setFiltroCurso] = useState('');
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -40,34 +47,66 @@ export default function IncidenciasPage() {
     }
   };
 
-  const cargarIncidentes = async () => {
-    setLoadingIncidentes(true);
-    try {
-      const response = await fetch(`${API_URL}/incidentes`);
-
-      if (!response.ok) {
-        console.error('Error HTTP:', response.status, response.statusText);
-        return;
-      }
-
-      const resultado = await response.json();
-
-      if (resultado.ok) {
-        setIncidentes(resultado.data || []);
-      }
-    } catch (error) {
-      console.error('Error al cargar incidentes:', error);
-    } finally {
-      setLoadingIncidentes(false);
-    }
-  };
-
   useEffect(() => {
-    cargarIncidentes();
+    const cargarDatos = async () => {
+      setLoadingIncidentes(true);
+      try {
+        const [incRes, cursosRes] = await Promise.all([
+          fetch(`${API_URL}/incidentes`),
+          fetch(`${API_URL}/institucional/cursos`)
+        ]);
+
+        const incData = await incRes.json();
+        if (incData.ok) setIncidentes(incData.data || []);
+
+        const cursosData = await cursosRes.json();
+        if (cursosData.ok) setCursos(cursosData.data || []);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+      } finally {
+        setLoadingIncidentes(false);
+      }
+    };
+
+    cargarDatos();
   }, []);
+
+  const incidentesFiltrados = incidentes.filter(inc => {
+    const termino = busqueda.toLowerCase();
+
+    const coincideBusqueda = !busqueda ||
+      inc.titulo?.toLowerCase().includes(termino) ||
+      inc.descripcion?.toLowerCase().includes(termino) ||
+      inc.id?.toLowerCase().includes(termino) ||
+      inc.participantes?.some((p: any) =>
+        p.nombreAlumno?.toLowerCase().includes(termino) ||
+        p.alumnoInstitucionalId?.toLowerCase().includes(termino)
+      );
+
+    const coincideGravedad = !filtroGravedad || inc.gravedad === filtroGravedad;
+    const coincideEstado = !filtroEstado || inc.estado === filtroEstado;
+    const coincideCurso = !filtroCurso ||
+      inc.participantes?.some((p: any) => p.curso === filtroCurso);
+
+    return coincideBusqueda && coincideGravedad && coincideEstado && coincideCurso;
+  });
 
   const handleIncidenteClick = (incidente: any) => {
     router.push(`/seguimiento/${incidente.id}`);
+  };
+
+  const gravedadMap: Record<string, { bg: string; color: string; label: string }> = {
+    'Alta': { bg: '#fee2e2', color: '#991b1b', label: 'Grave' },
+    'Grave': { bg: '#fee2e2', color: '#991b1b', label: 'Grave' },
+    'Media': { bg: '#fef3c7', color: '#92400e', label: 'Moderado' },
+    'Moderado': { bg: '#fef3c7', color: '#92400e', label: 'Moderado' },
+    'Leve': { bg: '#dcfce7', color: '#15803d', label: 'Leve' },
+  };
+
+  const estadoMap: Record<string, { bg: string; color: string }> = {
+    'Abierto': { bg: '#dbeafe', color: '#1e40af' },
+    'En seguimiento': { bg: '#e9d5ff', color: '#7c3aed' },
+    'Cerrado': { bg: '#e2e8f0', color: '#475569' },
   };
 
   return (
@@ -76,7 +115,7 @@ export default function IncidenciasPage() {
         <div>
           <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Incidencias</h1>
           <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>
-            {incidentes.length} registros encontrados
+            {incidentesFiltrados.length} de {incidentes.length} registros
           </p>
         </div>
         <Btn onClick={() => router.push('/registrar')}>
@@ -100,38 +139,43 @@ export default function IncidenciasPage() {
             Buscar alumno o tipo
           </label>
           <input
-            style={{ ...fld, width: '100%' }}
-            placeholder="Buscar..."
+            style={fld}
+            placeholder="Nombre alumno, titulo, ID..."
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
           />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
             Gravedad
           </label>
-          <select style={{ ...fld, width: '100%' }}>
-            <option>Todas</option>
-            <option>Leve</option>
-            <option>Moderado</option>
-            <option>Grave</option>
+          <select style={fld} value={filtroGravedad} onChange={e => setFiltroGravedad(e.target.value)}>
+            <option value="">Todas</option>
+            <option value="Leve">Leve</option>
+            <option value="Moderado">Moderado</option>
+            <option value="Grave">Grave</option>
           </select>
         </div>
         <div>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
             Estado
           </label>
-          <select style={{ ...fld, width: '100%' }}>
-            <option>Todos</option>
-            <option>Abierto</option>
-            <option>En seguimiento</option>
-            <option>Cerrado</option>
+          <select style={fld} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+            <option value="">Todos</option>
+            <option value="Abierto">Abierto</option>
+            <option value="En seguimiento">En seguimiento</option>
+            <option value="Cerrado">Cerrado</option>
           </select>
         </div>
         <div>
           <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
             Curso
           </label>
-          <select style={{ ...fld, width: '100%' }}>
-            <option>Todos</option>
+          <select style={fld} value={filtroCurso} onChange={e => setFiltroCurso(e.target.value)}>
+            <option value="">Todos</option>
+            {cursos.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -142,7 +186,7 @@ export default function IncidenciasPage() {
           <i className="bi bi-arrow-repeat" style={{ fontSize: 24, animation: 'spin 0.9s linear infinite' }} />
           <p style={{ marginTop: 12 }}>Cargando incidentes...</p>
         </div>
-      ) : incidentes.length === 0 ? (
+      ) : incidentesFiltrados.length === 0 ? (
         <div style={{
           background: '#fff',
           borderRadius: 12,
@@ -152,7 +196,9 @@ export default function IncidenciasPage() {
           color: '#64748b'
         }}>
           <i className="bi bi-inbox" style={{ fontSize: 32 }} />
-          <p style={{ marginTop: 12 }}>No hay incidentes registrados</p>
+          <p style={{ marginTop: 12 }}>
+            {incidentes.length === 0 ? 'No hay incidentes registrados' : 'No se encontraron incidentes con los filtros aplicados'}
+          </p>
         </div>
       ) : (
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'auto' }}>
@@ -169,21 +215,7 @@ export default function IncidenciasPage() {
               </tr>
             </thead>
             <tbody>
-              {incidentes.map((incidente) => {
-                const gravedadMap: Record<string, { bg: string; color: string; label: string }> = {
-                  'Alta': { bg: '#fee2e2', color: '#991b1b', label: 'Grave' },
-                  'Grave': { bg: '#fee2e2', color: '#991b1b', label: 'Grave' },
-                  'Media': { bg: '#fef3c7', color: '#92400e', label: 'Moderado' },
-                  'Moderado': { bg: '#fef3c7', color: '#92400e', label: 'Moderado' },
-                  'Leve': { bg: '#dcfce7', color: '#15803d', label: 'Leve' },
-                };
-
-                const estadoMap: Record<string, { bg: string; color: string }> = {
-                  'Abierto': { bg: '#dbeafe', color: '#1e40af' },
-                  'En seguimiento': { bg: '#e9d5ff', color: '#7c3aed' },
-                  'Cerrado': { bg: '#e2e8f0', color: '#475569' },
-                };
-
+              {incidentesFiltrados.map((incidente) => {
                 const gravedadStyle = gravedadMap[incidente.gravedad] || { bg: '#e2e8f0', color: '#475569', label: incidente.gravedad };
                 const estadoStyle = estadoMap[incidente.estado] || { bg: '#e2e8f0', color: '#475569' };
 
@@ -280,7 +312,7 @@ export default function IncidenciasPage() {
             <i className="bi bi-arrow-repeat" style={{ fontSize: 24, animation: 'spin 0.9s linear infinite' }} />
             <p style={{ marginTop: 12 }}>Cargando incidentes...</p>
           </div>
-        ) : incidentes.length === 0 ? (
+        ) : incidentesFiltrados.length === 0 ? (
           <div style={{
             background: '#fff',
             borderRadius: 12,
@@ -290,25 +322,11 @@ export default function IncidenciasPage() {
             color: '#64748b'
           }}>
             <i className="bi bi-inbox" style={{ fontSize: 32 }} />
-            <p style={{ marginTop: 12 }}>No hay incidentes registrados</p>
+            <p style={{ marginTop: 12 }}>No hay incidentes para mostrar</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {incidentes.map((incidente) => {
-              const gravedadMap: Record<string, { bg: string; color: string; label: string }> = {
-                'Alta': { bg: '#fee2e2', color: '#991b1b', label: 'Grave' },
-                'Grave': { bg: '#fee2e2', color: '#991b1b', label: 'Grave' },
-                'Media': { bg: '#fef3c7', color: '#92400e', label: 'Moderado' },
-                'Moderado': { bg: '#fef3c7', color: '#92400e', label: 'Moderado' },
-                'Leve': { bg: '#dcfce7', color: '#15803d', label: 'Leve' },
-              };
-
-              const estadoMap: Record<string, { bg: string; color: string }> = {
-                'Abierto': { bg: '#dbeafe', color: '#1e40af' },
-                'En seguimiento': { bg: '#e9d5ff', color: '#7c3aed' },
-                'Cerrado': { bg: '#e2e8f0', color: '#475569' },
-              };
-
+            {incidentesFiltrados.map((incidente) => {
               const gravedadStyle = gravedadMap[incidente.gravedad] || { bg: '#e2e8f0', color: '#475569', label: incidente.gravedad };
               const estadoStyle = estadoMap[incidente.estado] || { bg: '#e2e8f0', color: '#475569' };
 

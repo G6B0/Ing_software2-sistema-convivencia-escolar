@@ -321,13 +321,46 @@ export default function RegistrarPage() {
       <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '28px', maxWidth: 840 }}>
         <form onSubmit={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-            <Field label="Titulo del incidente" required>
-              <input
+            <Field label="Tipo de incidencia" required>
+              <select
                 style={{ ...fld, borderColor: errores.titulo ? '#dc2626' : '#e2e8f0' }}
                 value={form.titulo}
                 onChange={e => set('titulo', e.target.value)}
-                placeholder="Ej: Conflicto en el recreo"
-              />
+              >
+                <option value="">-- Seleccionar tipo --</option>
+                <optgroup label="Agresion y violencia">
+                  <option value="Agresion fisica">Agresion fisica</option>
+                  <option value="Agresion verbal">Agresion verbal</option>
+                  <option value="Agresion psicologica">Agresion psicologica</option>
+                  <option value="Pelea entre alumnos">Pelea entre alumnos</option>
+                  <option value="Intimidacion o amenaza">Intimidacion o amenaza</option>
+                </optgroup>
+                <optgroup label="Acoso">
+                  <option value="Bullying">Bullying</option>
+                  <option value="Cyberbullying">Cyberbullying</option>
+                  <option value="Acoso sexual">Acoso sexual</option>
+                  <option value="Discriminacion">Discriminacion</option>
+                </optgroup>
+                <optgroup label="Conducta">
+                  <option value="Falta de respeto a funcionario">Falta de respeto a funcionario</option>
+                  <option value="Interrupcion de clases">Interrupcion de clases</option>
+                  <option value="Incumplimiento de normas">Incumplimiento de normas</option>
+                  <option value="Uso de celular no autorizado">Uso de celular no autorizado</option>
+                  <option value="Inasistencia o fuga de clases">Inasistencia o fuga de clases</option>
+                </optgroup>
+                <optgroup label="Propiedad y sustancias">
+                  <option value="Hurto o robo">Hurto o robo</option>
+                  <option value="Daño a propiedad escolar">Daño a propiedad escolar</option>
+                  <option value="Consumo de sustancias">Consumo de sustancias</option>
+                  <option value="Porte de objetos peligrosos">Porte de objetos peligrosos</option>
+                </optgroup>
+                <optgroup label="Otros">
+                  <option value="Conflicto entre pares">Conflicto entre pares</option>
+                  <option value="Accidente escolar">Accidente escolar</option>
+                  <option value="Situacion de vulneracion de derechos">Situacion de vulneracion de derechos</option>
+                  <option value="Otro">Otro</option>
+                </optgroup>
+              </select>
               {errores.titulo && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errores.titulo}</span>}
             </Field>
 

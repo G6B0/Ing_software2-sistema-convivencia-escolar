@@ -178,11 +178,45 @@ class ServicioIncidentes {
     // 5. Test 1: Ordenar cronológicamente (del más antiguo al más nuevo)
     seguimientos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
 
-    return seguimientos
+    // 6. Enriquecer con nombre del funcionario
+    const seguimientosEnriquecidos = seguimientos.map((seg) => {
+      const func = this.servicioInstitucional.consultarFuncionario(seg.funcionarioResponsableId)
+      return {
+        ...seg,
+        funcionarioNombre: func ? func.nombre : null,
+      }
+    })
+
+    return seguimientosEnriquecidos
   }
 
-  consultarIncidentePorId(incidenteId) {
-    return this.persistenciaSistema.consultarIncidentePorId(incidenteId)
+  async consultarIncidentePorId(incidenteId) {
+    const incidente = await this.persistenciaSistema.consultarIncidentePorId(incidenteId)
+
+    if (!incidente) return null
+
+    const participantesEnriquecidos = (incidente.participantes || []).map((participante) => {
+      const alumno = this.servicioInstitucional.consultarAlumnoPorId(
+        participante.alumnoInstitucionalId
+      )
+      return {
+        ...participante,
+        nombreAlumno: alumno ? alumno.nombre : null,
+        curso: alumno ? alumno.curso : null,
+      }
+    })
+
+    const funcionario = this.servicioInstitucional.consultarFuncionario(
+      incidente.funcionarioResponsableId
+    )
+
+    return {
+      ...incidente,
+      participantes: participantesEnriquecidos,
+      funcionarioResponsable: funcionario
+        ? { nombre: funcionario.nombre, rol: funcionario.rol }
+        : null,
+    }
   }
 
   async listarIncidentes() {
