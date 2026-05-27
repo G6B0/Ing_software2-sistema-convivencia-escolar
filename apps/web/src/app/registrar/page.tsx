@@ -3,6 +3,7 @@
 import { useState,useEffect, FormEvent } from 'react';
 import Field from '@/components/Field';
 import Btn from '@/components/Btn';
+import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -19,12 +20,20 @@ const fld = {
   boxSizing: 'border-box' as const
 };
 
+const obtenerFechaLocalISO = () => {
+  const fecha = new Date();
+  const yyyy = fecha.getFullYear();
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dd = String(fecha.getDate()).padStart(2, '0');
+
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 interface FormData {
   titulo: string;
   fecha: string;
   descripcion: string;
   gravedad: string;
-  funcionarioId: string;
 }
 
 interface Participante {
@@ -43,9 +52,10 @@ export default function RegistrarPage() {
     titulo: '',
     fecha: '',
     descripcion: '',
-    gravedad: '',
-    funcionarioId: ''
+    gravedad: ''
   });
+  const [sesion, setSesion] = useState<SesionUsuario | null>(null);
+  const fechaMaxima = obtenerFechaLocalISO();
 
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [nuevoParticipante, setNuevoParticipante] = useState({
@@ -60,6 +70,15 @@ export default function RegistrarPage() {
     .then(r => r.json())
     .then(data => { if (data.ok) setProtocolos(data.data) })
     .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    try {
+      const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      setSesion(sesionGuardada ? JSON.parse(sesionGuardada) : null);
+    } catch {
+      setSesion(null);
+    }
   }, []);
 
   const [loading, setLoading] = useState(false);
@@ -105,9 +124,10 @@ export default function RegistrarPage() {
 
     if (!form.titulo.trim()) nuevosErrores.titulo = 'Campo requerido';
     if (!form.fecha) nuevosErrores.fecha = 'Campo requerido';
+    if (form.fecha && form.fecha > fechaMaxima) nuevosErrores.fecha = 'La fecha no puede estar en el futuro';
     if (!form.descripcion.trim()) nuevosErrores.descripcion = 'Campo requerido';
     if (!form.gravedad) nuevosErrores.gravedad = 'Campo requerido';
-    if (!form.funcionarioId.trim()) nuevosErrores.funcionarioId = 'Campo requerido';
+    if (!sesion?.funcionario?.id) nuevosErrores.funcionario = 'No se pudo obtener el funcionario de la sesion';
     if (participantes.length === 0) nuevosErrores.participantes = 'Debe agregar participantes';
 
     setErrores(nuevosErrores);
@@ -119,8 +139,7 @@ export default function RegistrarPage() {
       titulo: '',
       fecha: '',
       descripcion: '',
-      gravedad: '',
-      funcionarioId: ''
+      gravedad: ''
     });
 
     setParticipantes([]);
@@ -143,7 +162,7 @@ export default function RegistrarPage() {
           fecha: form.fecha,
           descripcion: form.descripcion,
           gravedad: form.gravedad,
-          funcionarioResponsableId: form.funcionarioId,
+          funcionarioResponsableId: sesion?.funcionario.id,
           participantes
         })
       });
@@ -223,6 +242,7 @@ export default function RegistrarPage() {
                   style={{ ...fld, borderColor: errores.fecha ? '#dc2626' : '#e2e8f0' }}
                   type="date"
                   value={form.fecha}
+                  max={fechaMaxima}
                   onChange={e => set('fecha', e.target.value)}
                 />
                 {errores.fecha && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errores.fecha}</span>}
@@ -263,15 +283,17 @@ export default function RegistrarPage() {
                   );
                 })()}
               </Field>
-              <Field label="ID Funcionario responsable" required>
+              <Field label="Funcionario responsable" required>
                 <input
-                  style={{ ...fld, borderColor: errores.funcionarioId ? '#dc2626' : '#e2e8f0' }}
-                  value={form.funcionarioId}
-                  onChange={e => set('funcionarioId', e.target.value)}
-                  placeholder="Ej: FUN-3001"
+                  style={{ ...fld, borderColor: errores.funcionario ? '#dc2626' : '#e2e8f0', background: '#f8fafc', color: '#475569' }}
+                  value={sesion?.funcionario.nombre || ''}
+                  readOnly
+                  placeholder="Funcionario de la sesion"
                 />
-                {errores.funcionarioId && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errores.funcionarioId}</span>}
-                <span style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>IDs de prueba: FUN-3001, FUN-3002, FUN-3003</span>
+                {errores.funcionario && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errores.funcionario}</span>}
+                {sesion?.funcionario.id && (
+                  <span style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Se registrara con el usuario que inicio sesion</span>
+                )}
               </Field>
             </div>
   

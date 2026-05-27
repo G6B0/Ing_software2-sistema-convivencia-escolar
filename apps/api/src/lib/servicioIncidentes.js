@@ -1,5 +1,14 @@
 const { ErrorValidacionSistema } = require('./erroresSistema')
 
+function obtenerFechaLocalISO() {
+  const fecha = new Date()
+  const yyyy = fecha.getFullYear()
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dd = String(fecha.getDate()).padStart(2, '0')
+
+  return `${yyyy}-${mm}-${dd}`
+}
+
 class ServicioIncidentes {
   constructor({ persistenciaSistema, servicioInstitucional }) {
     this.persistenciaSistema = persistenciaSistema
@@ -7,6 +16,10 @@ class ServicioIncidentes {
   }
 
   async registrarIncidente(datosIncidente) {
+    if (datosIncidente.fecha && datosIncidente.fecha > obtenerFechaLocalISO()) {
+      throw new ErrorValidacionSistema('La fecha del incidente no puede estar en el futuro.')
+    }
+
     const funcionario = this.servicioInstitucional.consultarFuncionario(
       datosIncidente.funcionarioResponsableId
     )
