@@ -28,6 +28,13 @@ function crearPersistenciaConIncidente() {
   }).then((incidente) => ({ persistencia, incidente }))
 }
 
+function obtenerFechaFuturaISO() {
+  const fecha = new Date()
+  fecha.setDate(fecha.getDate() + 1)
+
+  return fecha.toISOString()
+}
+
 test('T01 Test 1: existe una tabla o coleccion para almacenar incidentes', () => {
   assert.ok(tablasDelSistema.includes('incidentes'))
   assert.ok(esquemaSistema.incidentes)
@@ -346,6 +353,7 @@ test('US03 Task: Test 1 guarda seguimiento con todos los campos requeridos', asy
     incidente.id,
     {
       fecha: '2026-05-15T09:30:00.000Z',
+      descripcion: 'Se realiza entrevista formal con apoderado y estudiante.',
       accion: 'Entrevista con apoderado y estudiante',
       evolucionCaso: 'Se observa disposicion a reparar el conflicto.',
     },
@@ -369,6 +377,7 @@ test('US03 Task: Test 2 vincula automaticamente al funcionario activo', async ()
 
   const payload = {
     fecha: '2026-05-15T10:00:00.000Z',
+    descripcion: 'Se registra compromiso luego de conversacion con el estudiante.',
     accion: 'Registro de compromiso de convivencia',
     evolucionCaso: 'El estudiante acepta seguimiento semanal.',
   }
@@ -388,6 +397,7 @@ test('US03 Task: Test 3 mantiene integridad de los datos almacenados', async () 
 
   const payload = {
     fecha: '2026-05-15T11:15:00.000Z',
+    descripcion: 'Se deriva el caso al equipo de orientacion.',
     accion: 'Derivacion a orientacion',
     evolucionCaso: 'El caso queda en observacion por orientacion.',
   }
@@ -401,6 +411,57 @@ test('US03 Task: Test 3 mantiene integridad de los datos almacenados', async () 
   assert.equal(seguimientoGuardado.accion, payload.accion)
   assert.equal(seguimientoGuardado.evolucionCaso, payload.evolucionCaso)
   assert.equal(seguimientoGuardado.funcionarioResponsableId, 'FUN-3001')
+})
+
+test('US03 Task: rechaza registrar seguimiento con fecha futura', async () => {
+  const { persistencia, incidente } = await crearPersistenciaConIncidente()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema: persistencia,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await assert.rejects(
+    () =>
+      servicioIncidentes.registrarSeguimiento(
+        incidente.id,
+        {
+          fecha: obtenerFechaFuturaISO(),
+          descripcion: 'Seguimiento con fecha futura no permitido.',
+          accion: 'Registro futuro',
+          evolucionCaso: 'No debe guardarse.',
+        },
+        'FUN-3001'
+      ),
+    /La fecha del seguimiento no puede estar en el futuro/
+  )
+
+  const seguimientos = await persistencia.consultarSeguimientosPorIncidente(incidente.id)
+
+  assert.equal(seguimientos.length, 0)
+})
+
+test('US03 Task: historial de seguimientos incluye nombre del funcionario responsable', async () => {
+  const { persistencia, incidente } = await crearPersistenciaConIncidente()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema: persistencia,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await servicioIncidentes.registrarSeguimiento(
+    incidente.id,
+    {
+      fecha: '2026-05-15T11:15:00.000Z',
+      descripcion: 'Se revisa el avance del caso.',
+      accion: 'Revision de avance',
+      evolucionCaso: 'El caso presenta mejora.',
+    },
+    'FUN-3002'
+  )
+
+  const historial = await servicioIncidentes.obtenerHistorialSeguimientos(incidente.id, 'FUN-3001')
+
+  assert.equal(historial[0].funcionarioResponsableId, 'FUN-3002')
+  assert.equal(historial[0].funcionarioResponsable.nombre, 'Pedro Salinas')
 })
 
 test('API incidentes: permite guardar y consultar un incidente posteriormente', async () => {

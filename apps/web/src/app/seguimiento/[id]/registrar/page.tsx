@@ -1,24 +1,45 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+const obtenerFechaLocalISO = () => {
+  const fechaActual = new Date();
+  const yyyy = fechaActual.getFullYear();
+  const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
+  const dd = String(fechaActual.getDate()).padStart(2, '0');
+
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 export default function RegistrarSeguimientoPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const incidenteId = params.id;
+  const fechaMaxima = obtenerFechaLocalISO();
+  const [sesion, setSesion] = useState<SesionUsuario | null>(null);
 
   // Estados del formulario (La "memoria")
   const [descripcion, setDescripcion] = useState('');
   const [accion, setAccion] = useState('');
   const [evolucionCaso, setEvolucionCaso] = useState('');
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]); // Fecha de hoy por defecto
+  const [fecha, setFecha] = useState(fechaMaxima); // Fecha de hoy por defecto
   
   // Estado para los errores (El "guardia de seguridad visual")
   const [errores, setErrores] = useState<{ general?: string; descripcion?: string; accion?: string; evolucionCaso?: string; fecha?: string }>({});
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    try {
+      const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      setSesion(sesionGuardada ? JSON.parse(sesionGuardada) : null);
+    } catch {
+      setSesion(null);
+    }
+  }, []);
 
   const manejarEnvio = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +50,8 @@ export default function RegistrarSeguimientoPage() {
     if (!accion.trim()) nuevosErrores.accion = "Debes indicar una acción.";
     if (!evolucionCaso.trim()) nuevosErrores.evolucionCaso = "La evolución del caso es obligatoria.";
     if (!fecha) nuevosErrores.fecha = "La fecha es obligatoria.";
+    if (fecha && fecha > fechaMaxima) nuevosErrores.fecha = "La fecha no puede estar en el futuro.";
+    if (!sesion?.funcionario?.id) nuevosErrores.general = "No se pudo obtener el funcionario de la sesión.";
 
     // Si hay errores, detenemos el envío y mostramos los mensajes
     if (Object.keys(nuevosErrores).length > 0) {
@@ -45,7 +68,7 @@ export default function RegistrarSeguimientoPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-funcionario-id': 'FUN-3003' // ID duro por ahora para la prueba
+          'x-funcionario-id': sesion?.funcionario.id || ''
         },
         body: JSON.stringify({
           descripcion,
@@ -97,6 +120,21 @@ export default function RegistrarSeguimientoPage() {
       )}
 
       <form onSubmit={manejarEnvio} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>Funcionario responsable</label>
+          <input
+            type="text"
+            value={sesion?.funcionario.nombre || ''}
+            readOnly
+            placeholder="Funcionario de la sesión"
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569' }}
+          />
+          {sesion?.funcionario.id && (
+            <span style={{ color: '#64748b', fontSize: 12, marginTop: 4, display: 'block' }}>
+              El seguimiento se registrara con el usuario que inicio sesión.
+            </span>
+          )}
+        </div>
         
         {/* Campo Acción */}
         <div>
@@ -143,6 +181,7 @@ export default function RegistrarSeguimientoPage() {
           <input 
             type="date" 
             value={fecha} 
+            max={fechaMaxima}
             onChange={(e) => setFecha(e.target.value)}
             style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${errores.fecha ? '#ef4444' : '#e2e8f0'}` }}
           />
