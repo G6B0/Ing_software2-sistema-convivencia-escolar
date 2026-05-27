@@ -83,7 +83,6 @@ class PersistenciaSistemaSupabase {
         fecha: datosIncidente.fecha,
         descripcion: datosIncidente.descripcion,
         gravedad: datosIncidente.gravedad,
-        protocolo: datosIncidente.protocolo,
         estado: 'Abierto',
         funcionario_responsable_id: datosIncidente.funcionarioResponsableId,
         creado_en: creadoEn,
@@ -176,8 +175,8 @@ class PersistenciaSistemaSupabase {
       funcionario_responsable_id: datosAuditoria.funcionarioResponsableId,
       entidad: datosAuditoria.entidad,
       identificador_relacionado: datosAuditoria.identificadorRelacionado,
-     // gravedad_anterior: datosAuditoria.gravedadAnterior || null,
-     // gravedad_nueva: datosAuditoria.gravedadNueva || null,
+      gravedad_anterior: datosAuditoria.gravedadAnterior || null,
+      gravedad_nueva: datosAuditoria.gravedadNueva || null,
     })
       .select('*')
       .single()

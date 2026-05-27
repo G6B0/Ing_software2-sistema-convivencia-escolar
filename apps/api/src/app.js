@@ -87,7 +87,7 @@ function crearApp({
       if (error instanceof ErrorValidacionSistema) {
         return res.status(400).json({ ok: false, mensaje: error.message })
       }
-
+      console.error(error)
       return res.status(500).json({ ok: false, mensaje: 'No se pudo registrar el incidente.' })
     }
   })

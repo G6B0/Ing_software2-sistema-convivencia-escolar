@@ -1,5 +1,18 @@
 const { ErrorValidacionSistema } = require('./erroresSistema')
 
+function obtenerFechaLocalISO() {
+  const fecha = new Date()
+  const yyyy = fecha.getFullYear()
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dd = String(fecha.getDate()).padStart(2, '0')
+
+  return `${yyyy}-${mm}-${dd}`
+}
+
+function obtenerFechaSolo(fecha) {
+  return String(fecha).split('T')[0]
+}
+
 class ServicioIncidentes {
   constructor({ persistenciaSistema, servicioInstitucional }) {
     this.persistenciaSistema = persistenciaSistema
@@ -7,6 +20,10 @@ class ServicioIncidentes {
   }
 
   async registrarIncidente(datosIncidente) {
+    if (datosIncidente.fecha && obtenerFechaSolo(datosIncidente.fecha) > obtenerFechaLocalISO()) {
+      throw new ErrorValidacionSistema('La fecha del incidente no puede estar en el futuro.')
+    }
+
     const funcionario = this.servicioInstitucional.consultarFuncionario(
       datosIncidente.funcionarioResponsableId
     )
@@ -60,6 +77,10 @@ class ServicioIncidentes {
 
     if (!datosSeguimiento.fecha || datosSeguimiento.fecha.trim() === '') {
       throw new ErrorValidacionSistema('La fecha del seguimiento es obligatoria.');
+    }
+
+    if (obtenerFechaSolo(datosSeguimiento.fecha) > obtenerFechaLocalISO()) {
+      throw new ErrorValidacionSistema('La fecha del seguimiento no puede estar en el futuro.');
     }
     // ------------------------------------------
 
@@ -178,16 +199,23 @@ class ServicioIncidentes {
     // 5. Test 1: Ordenar cronológicamente (del más antiguo al más nuevo)
     seguimientos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
 
-    // 6. Enriquecer con nombre del funcionario
-    const seguimientosEnriquecidos = seguimientos.map((seg) => {
-      const func = this.servicioInstitucional.consultarFuncionario(seg.funcionarioResponsableId)
+    return seguimientos.map((seguimiento) => {
+      const funcionario = this.servicioInstitucional.consultarFuncionario(
+        seguimiento.funcionarioResponsableId
+      )
+
       return {
-        ...seg,
-        funcionarioNombre: func ? func.nombre : null,
+        ...seguimiento,
+        funcionarioResponsable: funcionario
+          ? {
+              id: funcionario.id,
+              nombre: funcionario.nombre,
+              rol: funcionario.rol,
+            }
+          : null,
+        funcionarioNombre: funcionario ? funcionario.nombre : null,
       }
     })
-
-    return seguimientosEnriquecidos
   }
 
   async consultarIncidentePorId(incidenteId) {
