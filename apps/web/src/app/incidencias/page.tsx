@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Btn from '@/components/Btn';
+import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -246,7 +247,7 @@ export default function IncidenciasPage() {
                       onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                       onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                     >
-                      {incidente.participantes?.[0]?.nombreAlumno || incidente.participantes?.[0]?.alumnoInstitucionalId || 'N/A'}
+                      {incidente.participantes?.[0] ? nombreAlumno(incidente.participantes[0]) : 'N/A'}
                     </td>
                     <td style={{ padding: '16px', fontSize: 14, color: '#0f172a' }}>
                       {incidente.titulo}
@@ -288,7 +289,7 @@ export default function IncidenciasPage() {
                       </span>
                     </td>
                     <td style={{ padding: '16px', fontSize: 14, color: '#0f172a' }}>
-                      {incidente.funcionarioResponsableId}
+                      {nombreFuncionario(incidente)}
                     </td>
                   </tr>
                 );
@@ -405,7 +406,7 @@ export default function IncidenciasPage() {
                     <div>
                       <span style={{ color: '#64748b' }}>Responsable: </span>
                       <span style={{ color: '#0f172a', fontWeight: 500 }}>
-                        {incidente.funcionarioResponsableId}
+                        {nombreFuncionario(incidente)}
                       </span>
                     </div>
                     <div>

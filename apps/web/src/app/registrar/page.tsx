@@ -444,7 +444,7 @@ export default function RegistrarPage() {
                         <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>
                           {p.nombreAlumno}
                           <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 8, fontSize: 13 }}>
-                            {p.alumnoInstitucionalId} - Curso {p.cursoAlumno}
+                            Curso {p.cursoAlumno}
                           </span>
                         </div>
                         <div style={{ fontSize: 13, color: '#64748b' }}>
@@ -524,7 +524,7 @@ export default function RegistrarPage() {
                     />
                     {nuevoParticipante.alumnoId && (
                       <span style={{ fontSize: 11, color: '#16a34a', marginTop: 4, display: 'block' }}>
-                        Seleccionado: {nuevoParticipante.alumnoNombre} ({nuevoParticipante.alumnoId})
+                        Seleccionado: {nuevoParticipante.alumnoNombre}
                       </span>
                     )}
 
@@ -565,7 +565,7 @@ export default function RegistrarPage() {
                                 {alumno.nombre}
                               </div>
                               <div style={{ fontSize: 12, color: '#64748b' }}>
-                                {alumno.id}
+                                Curso {alumno.curso}
                               </div>
                             </div>
                           ))
