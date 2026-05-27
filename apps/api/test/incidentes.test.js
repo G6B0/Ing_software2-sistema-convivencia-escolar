@@ -9,6 +9,17 @@ const {
   PersistenciaSistemaMemoria,
 } = require('../src/lib/persistenciaSistema')
 
+function obtenerFechaFuturaISO() {
+  const fecha = new Date()
+  fecha.setDate(fecha.getDate() + 1)
+
+  const yyyy = fecha.getFullYear()
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dd = String(fecha.getDate()).padStart(2, '0')
+
+  return `${yyyy}-${mm}-${dd}`
+}
+
 test('US01: T03 Test 1: registra un incidente correctamente asociado a un alumno valido', async () => {
 
   const persistenciaSistema = new PersistenciaSistemaMemoria()
@@ -176,6 +187,37 @@ test('US01: T05 Test 2: incidente queda disponible para gestion posterior', asyn
   assert.equal(incidentes[0].estado, 'Abierto')
 
   assert.equal(incidentes[0].id, incidente.id)
+})
+
+test('US01: rechaza registrar incidentes con fecha futura', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await assert.rejects(
+    () =>
+      servicioIncidentes.registrarIncidente({
+        titulo: 'Incidente futuro',
+        fecha: obtenerFechaFuturaISO(),
+        descripcion: 'Fecha invalida para un incidente',
+        gravedad: 'Leve',
+        funcionarioResponsableId: 'FUN-3001',
+        participantes: [
+          {
+            alumnoInstitucionalId: 'ALU-1001',
+            rolEnIncidente: 'Involucrado',
+          },
+        ],
+      }),
+    /La fecha del incidente no puede estar en el futuro/
+  )
+
+  const incidentes = await persistenciaSistema.listarIncidentes()
+
+  assert.equal(incidentes.length, 0)
 })
 test('US01: T06 Test 1: registra auditoria al crear incidente', async () => {
   const persistencia = new PersistenciaSistemaMemoria()
