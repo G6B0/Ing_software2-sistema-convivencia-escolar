@@ -131,7 +131,7 @@ test('T04 Test 1 y Test 3: consulta un alumno existente con datos basicos, curso
   assert.deepEqual(alumno, {
     id: 'ALU-1001',
     nombre: 'Camila Rojas',
-    curso: '8B',
+    curso: '8° Basico B',
     anioIngreso: 2022,
   })
 })

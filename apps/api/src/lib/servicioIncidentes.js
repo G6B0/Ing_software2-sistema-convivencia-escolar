@@ -264,9 +264,21 @@ class ServicioIncidentes {
         }
       })
 
+      const funcionario = this.servicioInstitucional.consultarFuncionario(
+        incidente.funcionarioResponsableId
+      )
+
       return {
         ...incidente,
         participantes: participantesEnriquecidos,
+        funcionarioResponsable: funcionario
+          ? {
+              id: funcionario.id,
+              nombre: funcionario.nombre,
+              rol: funcionario.rol,
+            }
+          : null,
+        funcionarioNombre: funcionario ? funcionario.nombre : null,
       }
     })
 

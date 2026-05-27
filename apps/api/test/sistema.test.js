@@ -498,7 +498,11 @@ test('API incidentes: permite guardar y consultar un incidente posteriormente', 
     const consulta = await respuestaConsulta.json()
 
     assert.equal(respuestaConsulta.status, 200)
-    assert.deepEqual(consulta.data, creacion.data)
+    assert.equal(consulta.data.id, creacion.data.id)
+    assert.equal(consulta.data.funcionarioResponsableId, 'FUN-3001')
+    assert.equal(consulta.data.funcionarioResponsable.nombre, 'Ana Morales')
+    assert.equal(consulta.data.participantes[0].alumnoInstitucionalId, 'ALU-1001')
+    assert.equal(consulta.data.participantes[0].nombreAlumno, 'Camila Rojas')
   } finally {
     await new Promise((resolve) => server.close(resolve))
   }

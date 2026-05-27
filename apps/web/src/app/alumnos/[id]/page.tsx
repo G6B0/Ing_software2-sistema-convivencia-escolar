@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Btn from '@/components/Btn';
+import { nombreFuncionario } from '@/lib/displayNames';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -10,17 +11,32 @@ export default function AlumnoPerfilPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [incidentes, setIncidentes] = useState<any[]>([]);
+  const [alumno, setAlumno] = useState<any | null>(null);
+  const [apoderados, setApoderados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const cargarIncidentes = async () => {
       try {
-        const response = await fetch(`${API_URL}/incidentes`);
-        if (response.ok) {
-          const resultado = await response.json();
-          if (resultado.ok) {
-            setIncidentes(resultado.data || []);
-          }
+        const [incRes, alumnoRes, apoderadosRes] = await Promise.all([
+          fetch(`${API_URL}/incidentes`),
+          fetch(`${API_URL}/institucional/alumnos/${params.id}`),
+          fetch(`${API_URL}/institucional/alumnos/${params.id}/apoderados`)
+        ]);
+
+        if (incRes.ok) {
+          const resultado = await incRes.json();
+          if (resultado.ok) setIncidentes(resultado.data || []);
+        }
+
+        if (alumnoRes.ok) {
+          const resultado = await alumnoRes.json();
+          if (resultado.ok) setAlumno(resultado.data);
+        }
+
+        if (apoderadosRes.ok) {
+          const resultado = await apoderadosRes.json();
+          if (resultado.ok) setApoderados(resultado.data || []);
         }
       } catch (error) {
         console.error('Error al cargar incidentes:', error);
@@ -30,7 +46,7 @@ export default function AlumnoPerfilPage() {
     };
 
     cargarIncidentes();
-  }, []);
+  }, [params.id]);
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -55,8 +71,8 @@ export default function AlumnoPerfilPage() {
   // Obtener datos del primer participante que coincida
   const primerIncidente = incidentesAlumno[0];
   const participante = primerIncidente?.participantes?.find((p: any) => p.alumnoInstitucionalId === params.id);
-  const nombreAlumno = participante?.nombreAlumno || params.id;
-  const curso = participante?.curso || 'N/A';
+  const nombreAlumno = alumno?.nombre || participante?.nombreAlumno || 'Alumno no especificado';
+  const curso = alumno?.curso || participante?.curso || 'N/A';
 
   // Calcular estadísticas
   const total = incidentesAlumno.length;
@@ -121,8 +137,10 @@ export default function AlumnoPerfilPage() {
               {nombreAlumno}
             </h1>
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 16, fontSize: 14, color: '#64748b' }}>
-              <span><i className="bi bi-person-badge" /> {params.id}</span>
               <span><i className="bi bi-mortarboard" /> Curso {curso}</span>
+              {apoderados.length > 0 && (
+                <span><i className="bi bi-people" /> Apoderados: {apoderados.map((a: any) => a.nombre).join(', ')}</span>
+              )}
             </div>
           </div>
         </div>
@@ -279,7 +297,7 @@ export default function AlumnoPerfilPage() {
                       —
                     </td>
                     <td style={{ padding: '16px', fontSize: 14, color: '#0f172a' }}>
-                      {incidente.funcionarioResponsableId}
+                      {nombreFuncionario(incidente)}
                     </td>
                   </tr>
                 );

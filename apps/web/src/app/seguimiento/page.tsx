@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { nombresAlumnos, nombreFuncionario } from '@/lib/displayNames';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -227,9 +228,7 @@ export default function SeguimientoPage() {
             const eStyle = estadoMap[incidente.estado] || { bg: '#e2e8f0', color: '#475569' };
 
             const participantes = incidente.participantes || [];
-            const nombresAlumnos = participantes
-              .map((p: any) => p.nombreAlumno || p.alumnoInstitucionalId)
-              .join(', ');
+            const nombresParticipantes = nombresAlumnos(participantes);
 
             return (
               <div
@@ -294,11 +293,11 @@ export default function SeguimientoPage() {
                 <div style={{ display: 'flex', gap: 20, fontSize: 12, color: '#64748b' }}>
                   <span>
                     <i className="bi bi-people" style={{ marginRight: 4 }} />
-                    {nombresAlumnos || 'Sin participantes'}
+                    {nombresParticipantes}
                   </span>
                   <span>
                     <i className="bi bi-person-badge" style={{ marginRight: 4 }} />
-                    {incidente.funcionarioResponsableId}
+                    {nombreFuncionario(incidente)}
                   </span>
                 </div>
               </div>

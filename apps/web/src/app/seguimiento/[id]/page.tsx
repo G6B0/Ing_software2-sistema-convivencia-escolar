@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SESSION_STORAGE_KEY = 'sce_sesion';
@@ -194,7 +195,7 @@ export default function SeguimientoIncidentePage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {incidente.participantes.map((p: any, i: number) => (
                   <div key={i} style={{ fontSize: 14, color: '#0f172a' }}>
-                    {p.nombreAlumno || p.alumnoInstitucionalId}
+                    {nombreAlumno(p)}
                     <span style={{ fontSize: 12, color: '#64748b', marginLeft: 6 }}>
                       ({p.rolEnIncidente})
                     </span>
@@ -213,7 +214,7 @@ export default function SeguimientoIncidentePage() {
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Funcionario Responsable</div>
             <div style={{ fontSize: 14, color: '#0f172a' }}>
-              {incidente.funcionarioResponsable?.nombre ?? incidente.funcionarioResponsableId ?? 'No especificado'}
+              {nombreFuncionario(incidente)}
             </div>
             {incidente.funcionarioResponsable?.rol && (
               <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
@@ -327,7 +328,7 @@ export default function SeguimientoIncidentePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
               {incidente.participantes?.map((p: any, i: number) => (
                 <span key={i} style={{ fontSize: 15, fontWeight: 600, color: '#0f172a' }}>
-                  {p.nombreAlumno || p.alumnoInstitucionalId}
+                  {nombreAlumno(p)}
                   {p.curso && (
                     <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 6 }}>{p.curso}</span>
                   )}
@@ -476,7 +477,7 @@ export default function SeguimientoIncidentePage() {
                     </span>
                   </div>
                   <div style={{ fontSize: 13, color: '#4338ca', fontWeight: 500, marginBottom: 6 }}>
-                    {seg.funcionarioNombre ?? seg.funcionarioResponsableId}
+                    {nombreFuncionario(seg)}
                   </div>
                   <p style={{ margin: 0, fontSize: 14, color: '#475569', lineHeight: 1.6 }}>
                     {seg.descripcion}
