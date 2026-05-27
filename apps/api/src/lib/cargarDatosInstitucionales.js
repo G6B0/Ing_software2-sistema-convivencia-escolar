@@ -40,7 +40,7 @@ function cargarDatosInstitucionales(rutaArchivo = rutaInstitucionalPorDefecto) {
 }
 
 function validarEstructuraInstitucional(datos) {
-  const secciones = ['alumnos', 'apoderados', 'funcionarios']
+  const secciones = ['alumnos', 'apoderados', 'funcionarios', 'cursos']
 
   const tieneEstructuraValida =
     datos &&
