@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import Field from '@/components/Field';
 import Btn from '@/components/Btn';
+import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -47,6 +48,7 @@ interface Mensaje {
 }
 
 export default function RegistrarPage() {
+  const [funcionarioSesion, setFuncionarioSesion] = useState<SesionUsuario['funcionario'] | null>(null);
   const [form, setForm] = useState<FormData>({
     titulo: '',
     fecha: '',
@@ -74,6 +76,17 @@ export default function RegistrarPage() {
   const [protocolos, setProtocolos] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    try {
+      const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      const sesion = sesionGuardada ? JSON.parse(sesionGuardada) as SesionUsuario : null;
+      if (sesion?.funcionario) {
+        setFuncionarioSesion(sesion.funcionario);
+        setForm(f => ({ ...f, funcionarioId: sesion.funcionario.id }));
+      }
+    } catch {
+      setFuncionarioSesion(null);
+    }
+
     fetch(`${API_URL}/institucional/protocolos`)
       .then(r => r.json())
       .then(data => { if (data.ok) setProtocolos(data.data) })
@@ -206,7 +219,7 @@ export default function RegistrarPage() {
       fecha: '',
       descripcion: '',
       gravedad: '',
-      funcionarioId: ''
+      funcionarioId: funcionarioSesion?.id || ''
     });
 
     setParticipantes([]);
@@ -363,15 +376,14 @@ export default function RegistrarPage() {
                 );
               })()}
             </Field>
-            <Field label="ID Funcionario responsable" required>
+            <Field label="Funcionario responsable" required>
               <input
-                style={{ ...fld, borderColor: errores.funcionarioId ? '#dc2626' : '#e2e8f0' }}
-                value={form.funcionarioId}
-                onChange={e => set('funcionarioId', e.target.value)}
-                placeholder="Ej: FUN-3001"
+                style={{ ...fld, borderColor: errores.funcionarioId ? '#dc2626' : '#e2e8f0', background: '#f1f5f9' }}
+                value={funcionarioSesion ? funcionarioSesion.nombre : ''}
+                readOnly
+                placeholder="Debe iniciar sesion"
               />
               {errores.funcionarioId && <span style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>{errores.funcionarioId}</span>}
-              <span style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>IDs de prueba: FUN-3001, FUN-3002, FUN-3003</span>
             </Field>
           </div>
 
