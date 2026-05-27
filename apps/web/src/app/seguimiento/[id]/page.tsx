@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -10,8 +11,19 @@ export default function SeguimientoIncidentePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [incidente, setIncidente] = useState<any | null>(null);
+  const [seguimientos, setSeguimientos] = useState<any[]>([]);
+  const [sesion, setSesion] = useState<SesionUsuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [protocolos, setProtocolos] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    try {
+      const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      setSesion(sesionGuardada ? JSON.parse(sesionGuardada) : null);
+    } catch {
+      setSesion(null);
+    }
+  }, []);
 
   useEffect(() => {
     fetch(`${API_URL}/institucional/protocolos`)
@@ -39,6 +51,26 @@ export default function SeguimientoIncidentePage() {
 
     cargarIncidente();
   }, [id]);
+
+  useEffect(() => {
+    if (!sesion?.funcionario?.id) return;
+
+    const cargarSeguimientos = async () => {
+      try {
+        const response = await fetch(`${API_URL}/incidentes/${id}/seguimientos`, {
+          headers: { 'x-funcionario-id': sesion.funcionario.id },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSeguimientos(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Error al cargar seguimientos:', error);
+      }
+    };
+
+    cargarSeguimientos();
+  }, [id, sesion]);
   const formatearFecha = (fecha: string) => {
     try {
       if (!fecha) return 'Sin fecha';
@@ -239,9 +271,39 @@ export default function SeguimientoIncidentePage() {
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>Funcionario Responsable</div>
-            <div style={{ fontSize: 14, color: '#0f172a' }}>{incidente.funcionarioResponsableId}</div>
+            <div style={{ fontSize: 14, color: '#0f172a' }}>
+              {incidente.funcionarioResponsable?.nombre ?? incidente.funcionarioResponsableId}
+            </div>
           </div>
         </div>
+      </div>
+      <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px' }}>
+        <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: '#0f172a' }}>
+          Historial de Seguimientos
+        </h3>
+        {seguimientos.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>Aun no hay seguimientos registrados para este incidente.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {seguimientos.map((seguimiento) => (
+              <div key={seguimiento.id} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '14px 16px', background: '#f8fafc' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{seguimiento.accion}</div>
+                  <div style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{formatearFecha(seguimiento.fecha)}</div>
+                </div>
+                {seguimiento.descripcion && (
+                  <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>{seguimiento.descripcion}</div>
+                )}
+                <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+                  Evolucion: <span style={{ color: '#475569' }}>{seguimiento.evolucionCaso}</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>
+                  Responsable: <span style={{ color: '#0f172a', fontWeight: 600 }}>{seguimiento.funcionarioResponsable?.nombre ?? seguimiento.funcionarioResponsableId ?? 'No especificado'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
         {/* Cambiar gravedad */}
         <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
