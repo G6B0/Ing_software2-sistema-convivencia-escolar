@@ -165,11 +165,47 @@ export default function RegistrarPage() {
       return;
     }
 
+    // Validar que el mismo alumno no este ya agregado
     const yaAgregado = participantes.some(
       p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId
     );
     if (yaAgregado) {
       alert('Este alumno ya fue agregado como participante');
+      return;
+    }
+
+    // Validar que no exista un agresor y victima siendo el mismo alumno
+    const rolesConflictivos: Record<string, string> = {
+      'Agresor': 'Victima',
+      'Victima': 'Agresor'
+    };
+
+    const rolConflictivo = rolesConflictivos[nuevoParticipante.rol];
+    if (rolConflictivo) {
+      const conflicto = participantes.some(
+        p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId && p.rolEnIncidente === rolConflictivo
+      );
+      if (conflicto) {
+        alert(`Este alumno ya fue registrado como ${rolConflictivo}. Un mismo alumno no puede ser ${nuevoParticipante.rol} y ${rolConflictivo} al mismo tiempo.`);
+        return;
+      }
+    }
+
+    // Validar que no haya dos agresores con el mismo alumno en roles opuestos
+    const alumnoYaEsAgresor = participantes.some(
+      p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId && p.rolEnIncidente === 'Agresor'
+    );
+    const alumnoYaEsVictima = participantes.some(
+      p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId && p.rolEnIncidente === 'Victima'
+    );
+
+    if (nuevoParticipante.rol === 'Victima' && alumnoYaEsAgresor) {
+      alert('Este alumno ya esta registrado como Agresor. No puede ser Victima al mismo tiempo.');
+      return;
+    }
+
+    if (nuevoParticipante.rol === 'Agresor' && alumnoYaEsVictima) {
+      alert('Este alumno ya esta registrado como Victima. No puede ser Agresor al mismo tiempo.');
       return;
     }
 
