@@ -17,6 +17,8 @@ class ServicioInstitucional {
         funcionario,
       ])
     )
+    this.protocolos = datosInstitucionales.protocolos
+    this.cursos = datosInstitucionales.cursos
   }
 
   consultarAlumnoPorId(alumnoId) {
@@ -52,6 +54,23 @@ class ServicioInstitucional {
       this.funcionariosPorCorreo.get(String(identificadorOCorreo).toLowerCase())
 
     return funcionario || null
+  }
+  consultarProtocolo(gravedad) {
+    return this.protocolos[gravedad] || null
+  }
+
+  listarCursos() {
+    return this.cursos
+  }
+
+  listarAlumnosPorCurso(curso) {
+    const resultado = []
+    for (const alumno of this.alumnos.values()) {
+      if (alumno.curso === curso) {
+        resultado.push({ id: alumno.id, nombre: alumno.nombre, curso: alumno.curso })
+      }
+    }
+    return resultado
   }
 }
 

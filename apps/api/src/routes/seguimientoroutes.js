@@ -1,8 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { registrarSeguimiento } = require('../controllers/seguimientoController');
+const {
+  registrarSeguimiento,
+  obtenerSeguimientos,
+  actualizarGravedadIncidente,
+  actualizarEstadoIncidente,
+} = require('../controllers/seguimientoController');
 
 // Definimos que cuando llegue un POST a /incidentes/:id/seguimientos se ejecute tu lógica
 router.post('/incidentes/:id/seguimientos', registrarSeguimiento);
+router.get('/incidentes/:id/seguimientos', obtenerSeguimientos);
+router.patch('/incidentes/:id/gravedad', actualizarGravedadIncidente);
+router.patch('/incidentes/:id/estado', actualizarEstadoIncidente);
 
 module.exports = router;

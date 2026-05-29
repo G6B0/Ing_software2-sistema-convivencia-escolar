@@ -18,7 +18,7 @@ function crearPersistenciaConIncidente() {
     titulo: 'Agresion verbal en recreo',
     fecha: '2026-05-14T10:00:00.000Z',
     descripcion: 'Alumno reporta agresion verbal durante el recreo.',
-    gravedad: 'Media',
+    gravedad: 'Moderado',
     estado: 'Abierto',
     funcionarioResponsableId: 'FUN-3001',
     participantes: [
@@ -26,6 +26,13 @@ function crearPersistenciaConIncidente() {
       { alumnoInstitucionalId: 'ALU-1002', rolEnIncidente: 'Agresor' },
     ],
   }).then((incidente) => ({ persistencia, incidente }))
+}
+
+function obtenerFechaFuturaISO() {
+  const fecha = new Date()
+  fecha.setDate(fecha.getDate() + 1)
+
+  return fecha.toISOString()
 }
 
 test('T01 Test 1: existe una tabla o coleccion para almacenar incidentes', () => {
@@ -91,7 +98,7 @@ test('T02 Test 2: un incidente guardado queda asociado a un identificador unico'
     titulo: 'Conflicto en sala',
     fecha: '2026-05-14T11:00:00.000Z',
     descripcion: 'Discusion entre estudiantes durante la clase.',
-    gravedad: 'Baja',
+    gravedad: 'Leve',
     estado: 'Abierto',
     funcionarioResponsableId: 'FUN-3001',
     participantes: [{ alumnoInstitucionalId: 'ALU-1002', rolEnIncidente: 'Involucrado' }],
@@ -103,11 +110,11 @@ test('T02 Test 2: un incidente guardado queda asociado a un identificador unico'
   assert.equal(new Set(incidentes.map((incidente) => incidente.id)).size, incidentes.length)
 })
 
-test('T02 Test 3: incidentes soporta estados Abierto, Cerrado y Reabierto', () => {
+test('T02 Test 3: incidentes soporta estados Abierto, En seguimiento y Cerrado', () => {
   assert.deepEqual(esquemaSistema.incidentes.campos.estado.valoresPermitidos, [
     'Abierto',
+    'En seguimiento',
     'Cerrado',
-    'Reabierto',
   ])
 })
 
@@ -182,7 +189,7 @@ test('T04 Test 1: guarda un incidente valido para un alumno institucional existe
     titulo: 'Agresion verbal en recreo',
     fecha: '2026-05-14T10:00:00.000Z',
     descripcion: 'Alumno reporta agresion verbal durante el recreo.',
-    gravedad: 'Media',
+    gravedad: 'Moderado',
     estado: 'Abierto',
     funcionarioResponsableId: 'FUN-3001',
     participantes: [
@@ -346,6 +353,7 @@ test('US03 Task: Test 1 guarda seguimiento con todos los campos requeridos', asy
     incidente.id,
     {
       fecha: '2026-05-15T09:30:00.000Z',
+      descripcion: 'Se realiza entrevista formal con apoderado y estudiante.',
       accion: 'Entrevista con apoderado y estudiante',
       evolucionCaso: 'Se observa disposicion a reparar el conflicto.',
     },
@@ -369,6 +377,7 @@ test('US03 Task: Test 2 vincula automaticamente al funcionario activo', async ()
 
   const payload = {
     fecha: '2026-05-15T10:00:00.000Z',
+    descripcion: 'Se registra compromiso luego de conversacion con el estudiante.',
     accion: 'Registro de compromiso de convivencia',
     evolucionCaso: 'El estudiante acepta seguimiento semanal.',
   }
@@ -388,6 +397,7 @@ test('US03 Task: Test 3 mantiene integridad de los datos almacenados', async () 
 
   const payload = {
     fecha: '2026-05-15T11:15:00.000Z',
+    descripcion: 'Se deriva el caso al equipo de orientacion.',
     accion: 'Derivacion a orientacion',
     evolucionCaso: 'El caso queda en observacion por orientacion.',
   }
@@ -401,6 +411,57 @@ test('US03 Task: Test 3 mantiene integridad de los datos almacenados', async () 
   assert.equal(seguimientoGuardado.accion, payload.accion)
   assert.equal(seguimientoGuardado.evolucionCaso, payload.evolucionCaso)
   assert.equal(seguimientoGuardado.funcionarioResponsableId, 'FUN-3001')
+})
+
+test('US03 Task: rechaza registrar seguimiento con fecha futura', async () => {
+  const { persistencia, incidente } = await crearPersistenciaConIncidente()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema: persistencia,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await assert.rejects(
+    () =>
+      servicioIncidentes.registrarSeguimiento(
+        incidente.id,
+        {
+          fecha: obtenerFechaFuturaISO(),
+          descripcion: 'Seguimiento con fecha futura no permitido.',
+          accion: 'Registro futuro',
+          evolucionCaso: 'No debe guardarse.',
+        },
+        'FUN-3001'
+      ),
+    /La fecha del seguimiento no puede estar en el futuro/
+  )
+
+  const seguimientos = await persistencia.consultarSeguimientosPorIncidente(incidente.id)
+
+  assert.equal(seguimientos.length, 0)
+})
+
+test('US03 Task: historial de seguimientos incluye nombre del funcionario responsable', async () => {
+  const { persistencia, incidente } = await crearPersistenciaConIncidente()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema: persistencia,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await servicioIncidentes.registrarSeguimiento(
+    incidente.id,
+    {
+      fecha: '2026-05-15T11:15:00.000Z',
+      descripcion: 'Se revisa el avance del caso.',
+      accion: 'Revision de avance',
+      evolucionCaso: 'El caso presenta mejora.',
+    },
+    'FUN-3002'
+  )
+
+  const historial = await servicioIncidentes.obtenerHistorialSeguimientos(incidente.id, 'FUN-3001')
+
+  assert.equal(historial[0].funcionarioResponsableId, 'FUN-3002')
+  assert.equal(historial[0].funcionarioResponsable.nombre, 'Pedro Salinas')
 })
 
 test('API incidentes: permite guardar y consultar un incidente posteriormente', async () => {
@@ -418,7 +479,7 @@ test('API incidentes: permite guardar y consultar un incidente posteriormente', 
         titulo: 'Agresion verbal en recreo',
         fecha: '2026-05-14T10:00:00.000Z',
         descripcion: 'Alumno reporta agresion verbal durante el recreo.',
-        gravedad: 'Media',
+        gravedad: 'Moderado',
         estado: 'Abierto',
         funcionarioResponsableId: 'FUN-3001',
         participantes: [
@@ -437,7 +498,57 @@ test('API incidentes: permite guardar y consultar un incidente posteriormente', 
     const consulta = await respuestaConsulta.json()
 
     assert.equal(respuestaConsulta.status, 200)
-    assert.deepEqual(consulta.data, creacion.data)
+    assert.equal(consulta.data.id, creacion.data.id)
+    assert.equal(consulta.data.funcionarioResponsableId, 'FUN-3001')
+    assert.equal(consulta.data.funcionarioResponsable.nombre, 'Ana Morales')
+    assert.equal(consulta.data.participantes[0].alumnoInstitucionalId, 'ALU-1001')
+    assert.equal(consulta.data.participantes[0].nombreAlumno, 'Camila Rojas')
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
+})
+
+test('API incidentes: actualiza el estado de un incidente', async () => {
+  const app = crearApp()
+  const server = app.listen(0)
+
+  try {
+    const { port } = server.address()
+    const baseUrl = `http://127.0.0.1:${port}`
+
+    const respuestaCreacion = await fetch(`${baseUrl}/incidentes`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        titulo: 'Agresion verbal en recreo',
+        fecha: '2026-05-14T10:00:00.000Z',
+        descripcion: 'Alumno reporta agresion verbal durante el recreo.',
+        gravedad: 'Moderado',
+        funcionarioResponsableId: 'FUN-3001',
+        participantes: [
+          { alumnoInstitucionalId: 'ALU-1001', rolEnIncidente: 'Victima' },
+        ],
+      }),
+    })
+    const creacion = await respuestaCreacion.json()
+
+    const respuestaActualizacion = await fetch(`${baseUrl}/incidentes/${creacion.data.id}/estado`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-funcionario-id': 'FUN-3001',
+      },
+      body: JSON.stringify({ estado: 'En seguimiento' }),
+    })
+    const actualizacion = await respuestaActualizacion.json()
+
+    assert.equal(respuestaActualizacion.status, 200)
+    assert.equal(actualizacion.incidente.estado, 'En seguimiento')
+
+    const respuestaConsulta = await fetch(`${baseUrl}/incidentes/${creacion.data.id}`)
+    const consulta = await respuestaConsulta.json()
+
+    assert.equal(consulta.data.estado, 'En seguimiento')
   } finally {
     await new Promise((resolve) => server.close(resolve))
   }

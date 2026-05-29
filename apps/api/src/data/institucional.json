@@ -1,86 +1,100 @@
 {
+  "cursos": [
+    "1° Basico A", "1° Basico B", "1° Basico C",
+    "2° Basico A", "2° Basico B", "2° Basico C",
+    "3° Basico A", "3° Basico B", "3° Basico C",
+    "4° Basico A", "4° Basico B", "4° Basico C",
+    "5° Basico A", "5° Basico B", "5° Basico C",
+    "6° Basico A", "6° Basico B", "6° Basico C",
+    "7° Basico A", "7° Basico B", "7° Basico C",
+    "8° Basico A", "8° Basico B", "8° Basico C",
+    "1° Medio A", "1° Medio B", "1° Medio C",
+    "2° Medio A", "2° Medio B", "2° Medio C",
+    "3° Medio A", "3° Medio B", "3° Medio C",
+    "4° Medio A", "4° Medio B", "4° Medio C"
+  ],
   "alumnos": [
     {
       "id": "ALU-1001",
       "nombre": "Camila Rojas",
-      "curso": "8B",
+      "curso": "8° Basico B",
       "anioIngreso": 2022,
       "apoderados": ["APO-2001", "APO-2002"]
     },
     {
       "id": "ALU-1002",
       "nombre": "Martin Soto",
-      "curso": "7A",
+      "curso": "7° Basico A",
       "anioIngreso": 2021,
       "apoderados": ["APO-2003"]
     },
     {
       "id": "ALU-1003",
       "nombre": "Valentina Perez",
-      "curso": "6C",
+      "curso": "6° Basico C",
       "anioIngreso": 2023,
       "apoderados": ["APO-2004"]
     },
     {
       "id": "ALU-1004",
       "nombre": "Diego Morales",
-      "curso": "8A",
+      "curso": "8° Basico A",
       "anioIngreso": 2020,
       "apoderados": ["APO-2005", "APO-2006"]
     },
     {
       "id": "ALU-1005",
       "nombre": "Antonia Fuentes",
-      "curso": "5B",
+      "curso": "5° Basico B",
       "anioIngreso": 2024,
       "apoderados": ["APO-2007"]
     },
     {
       "id": "ALU-1006",
       "nombre": "Lucas Herrera",
-      "curso": "7B",
+      "curso": "7° Basico B",
       "anioIngreso": 2022,
       "apoderados": ["APO-2008"]
     },
     {
       "id": "ALU-1007",
       "nombre": "Sofia Araya",
-      "curso": "6A",
+      "curso": "6° Basico A",
       "anioIngreso": 2021,
       "apoderados": ["APO-2009"]
     },
     {
       "id": "ALU-1008",
       "nombre": "Benjamin Castillo",
-      "curso": "8C",
+      "curso": "8° Basico C",
       "anioIngreso": 2020,
       "apoderados": ["APO-2010"]
     },
     {
       "id": "ALU-1009",
       "nombre": "Isidora Vega",
-      "curso": "5A",
+      "curso": "5° Basico A",
       "anioIngreso": 2024,
       "apoderados": ["APO-2011"]
     },
     {
       "id": "ALU-1010",
       "nombre": "Tomas Navarro",
-      "curso": "7C",
+      "curso": "7° Basico C",
       "anioIngreso": 2022,
       "apoderados": ["APO-2012"]
     },
     {
       "id": "ALU-1011",
       "nombre": "Florencia Diaz",
-      "curso": "6B",
+      "curso": "6° Basico B",
       "anioIngreso": 2023,
       "apoderados": ["APO-2013"]
     },
     {
       "id": "ALU-1012",
       "nombre": "Mateo Aguilera",
-      "curso": "8B",
+      "curso": "8° Basico B",
       "anioIngreso": 2021,
       "apoderados": ["APO-2014"]
     }
@@ -248,5 +262,9 @@
       "correoInstitucional": "sebastian.torres@colegio.cl",
       "rol": "inspector"
     }
-  ]
+  ],"protocolos": {
+    "Leve": "Registrar observación y realizar seguimiento preventivo.",
+    "Moderado": "Notificar al inspector y contactar al apoderado.",
+    "Grave": "Pal SENAME"
+  }
 }

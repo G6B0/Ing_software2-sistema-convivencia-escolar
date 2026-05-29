@@ -10,7 +10,7 @@ const esquemaSistema = {
       estado: {
         tipo: 'string',
         requerido: true,
-        valoresPermitidos: ['Abierto', 'Cerrado', 'Reabierto'],
+        valoresPermitidos: ['Abierto', 'En seguimiento', 'Cerrado'],
       },
       funcionarioResponsableId: {
         tipo: 'string',
@@ -66,6 +66,13 @@ const esquemaSistema = {
       },
       entidad: { tipo: 'string', requerido: true },
       identificadorRelacionado: { tipo: 'string', requerido: true },
+    },
+  },
+  protocolos: {
+    descripcion: 'Protocolos de acción según gravedad del incidente.',
+    campos: {
+      gravedad: { tipo: 'string', requerido: true, unico: true, valoresPermitidos: ['Leve', 'Moderado', 'Grave'] },
+      descripcion: { tipo: 'string', requerido: true },
     },
   },
 }

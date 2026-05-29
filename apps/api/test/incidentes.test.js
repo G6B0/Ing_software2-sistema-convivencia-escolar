@@ -1,12 +1,24 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 
+
 const { ErrorValidacionSistema } = require('../src/lib/erroresSistema')
 const ServicioIncidentes = require('../src/lib/servicioIncidentes')
 const ServicioInstitucional = require('../src/lib/servicioInstitucional')
 const {
   PersistenciaSistemaMemoria,
 } = require('../src/lib/persistenciaSistema')
+
+function obtenerFechaFuturaISO() {
+  const fecha = new Date()
+  fecha.setDate(fecha.getDate() + 1)
+
+  const yyyy = fecha.getFullYear()
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dd = String(fecha.getDate()).padStart(2, '0')
+
+  return `${yyyy}-${mm}-${dd}`
+}
 
 test('US01: T03 Test 1: registra un incidente correctamente asociado a un alumno valido', async () => {
 
@@ -23,7 +35,7 @@ test('US01: T03 Test 1: registra un incidente correctamente asociado a un alumno
     titulo: 'Pelea en recreo',
     fecha: '2026-05-15',
     descripcion: 'Discusion entre alumnos',
-    gravedad: 'Alta',
+    gravedad: 'Grave',
     estado: 'Abierto',
     funcionarioResponsableId: 'FUN-3002',
     participantes: [
@@ -59,7 +71,7 @@ test('US01: T03 Test 2: guarda todos los datos obligatorios del incidente', asyn
     titulo: 'Insulto en sala',
     fecha: '2026-05-15',
     descripcion: 'Alumno insulta a companero',
-    gravedad: 'Media',
+    gravedad: 'Moderado',
     estado: 'Abierto',
     funcionarioResponsableId: 'FUN-3001',
     participantes: [
@@ -73,7 +85,7 @@ test('US01: T03 Test 2: guarda todos los datos obligatorios del incidente', asyn
   assert.equal(incidente.titulo, 'Insulto en sala')
   assert.equal(incidente.fecha, '2026-05-15')
   assert.equal(incidente.descripcion, 'Alumno insulta a companero')
-  assert.equal(incidente.gravedad, 'Media')
+  assert.equal(incidente.gravedad, 'Moderado')
 })
 
 test('US01: T03 Test 3: el incidente queda disponible para consulta', async () => {
@@ -91,7 +103,7 @@ test('US01: T03 Test 3: el incidente queda disponible para consulta', async () =
     titulo: 'Empujon en pasillo',
     fecha: '2026-05-15',
     descripcion: 'Empujon entre estudiantes',
-    gravedad: 'Baja',
+    gravedad: 'Leve',
     estado: 'Abierto',
     funcionarioResponsableId: 'FUN-3003',
     participantes: [
@@ -130,7 +142,7 @@ test('US01: T05 Test 1: asigna estado inicial Abierto automaticamente', async ()
     titulo: 'Pelea en recreo',
     fecha: '2026-05-15',
     descripcion: 'Discusion entre alumnos',
-    gravedad: 'Alta',
+    gravedad: 'Grave',
     funcionarioResponsableId: 'FUN-3002',
     participantes: [
       {
@@ -158,7 +170,7 @@ test('US01: T05 Test 2: incidente queda disponible para gestion posterior', asyn
     titulo: 'Empujon',
     fecha: '2026-05-15',
     descripcion: 'Empujon entre alumnos',
-    gravedad: 'Media',
+    gravedad: 'Moderado',
     funcionarioResponsableId: 'FUN-3001',
     participantes: [
       {
@@ -176,6 +188,37 @@ test('US01: T05 Test 2: incidente queda disponible para gestion posterior', asyn
 
   assert.equal(incidentes[0].id, incidente.id)
 })
+
+test('US01: rechaza registrar incidentes con fecha futura', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await assert.rejects(
+    () =>
+      servicioIncidentes.registrarIncidente({
+        titulo: 'Incidente futuro',
+        fecha: obtenerFechaFuturaISO(),
+        descripcion: 'Fecha invalida para un incidente',
+        gravedad: 'Leve',
+        funcionarioResponsableId: 'FUN-3001',
+        participantes: [
+          {
+            alumnoInstitucionalId: 'ALU-1001',
+            rolEnIncidente: 'Involucrado',
+          },
+        ],
+      }),
+    /La fecha del incidente no puede estar en el futuro/
+  )
+
+  const incidentes = await persistenciaSistema.listarIncidentes()
+
+  assert.equal(incidentes.length, 0)
+})
 test('US01: T06 Test 1: registra auditoria al crear incidente', async () => {
   const persistencia = new PersistenciaSistemaMemoria()
   const servicioInstitucional = new ServicioInstitucional()
@@ -189,7 +232,7 @@ test('US01: T06 Test 1: registra auditoria al crear incidente', async () => {
     titulo: 'Pelea en recreo',
     fecha: '2026-05-14',
     descripcion: 'Discusion entre alumnos',
-    gravedad: 'Alta',
+    gravedad: 'Grave',
     funcionarioResponsableId: 'FUN-3002',
     participantes: [
       {
@@ -217,7 +260,7 @@ test('US01: T06 Test 2: guarda los datos minimos de auditoria', async () => {
     titulo: 'Pelea en recreo',
     fecha: '2026-05-14',
     descripcion: 'Discusion entre alumnos',
-    gravedad: 'Alta',
+    gravedad: 'Grave',
     funcionarioResponsableId: 'FUN-3002',
     participantes: [
       {
@@ -252,7 +295,7 @@ test('US01: T06 Test 3: no registra auditoria si el incidente es invalido', asyn
         titulo: 'Pelea en recreo',
         fecha: '2026-05-14',
         descripcion: 'Discusion entre alumnos',
-        gravedad: 'Alta',
+        gravedad: 'Grave',
 
         // funcionario invalido
         funcionarioResponsableId: 'FUN-9999',
@@ -270,4 +313,403 @@ test('US01: T06 Test 3: no registra auditoria si el incidente es invalido', asyn
   const auditorias = Array.from(persistencia.auditorias.values())
 
   assert.equal(auditorias.length, 0)
+})
+
+
+test('US02: T02 Test 1: guarda incidente con gravedad valida', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Pelea en recreo',
+    fecha: '2025-05-20',
+    descripcion: 'Descripcion valida del incidente',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  assert.equal(incidente.gravedad, 'Leve')
+})
+
+test('US02: T02 Test 2: rechaza gravedad invalida', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await assert.rejects(
+    async () =>
+      servicioIncidentes.registrarIncidente({
+        titulo: 'Incidente invalido',
+        fecha: '2025-05-23',
+        descripcion: 'Descripcion valida del incidente',
+        gravedad: 'Urgente',
+        funcionarioResponsableId: 'FUN-3001',
+        participantes: [
+          {
+            alumnoInstitucionalId: 'ALU-1001',
+            rolEnIncidente: 'Agresor',
+          },
+        ],
+      }),
+    ErrorValidacionSistema
+  )
+
+  const incidentes = await persistenciaSistema.listarIncidentes()
+
+  assert.equal(incidentes.length, 0)
+})
+
+test('US02: T02 Test 3: rechaza incidente sin gravedad', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+  await assert.rejects(
+    async () =>
+      servicioIncidentes.registrarIncidente({
+        titulo: 'Incidente sin gravedad',
+        fecha: '2025-05-23',
+        descripcion: 'Descripcion valida del incidente',
+        funcionarioResponsableId: 'FUN-3001',
+        participantes: [
+          {
+            alumnoInstitucionalId: 'ALU-1001',
+            rolEnIncidente: 'Agresor',
+          },
+        ],
+      }),
+    ErrorValidacionSistema
+  )
+
+  const incidentes = await persistenciaSistema.listarIncidentes()
+
+  assert.equal(incidentes.length, 0)
+})
+
+test('US02: T03 Test 1: asocia protocolo correcto al asignar gravedad leve', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Empujon en pasillo',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  assert.equal(incidente.protocolo, servicioInstitucional.consultarProtocolo('Leve'))
+})
+
+test('US02: T03 Test 2: asocia protocolo correcto al asignar gravedad grave', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Pelea grave',
+    fecha: '2025-05-20',
+    descripcion: 'Agresion fisica fuerte',
+    gravedad: 'Grave',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  assert.equal(incidente.protocolo, servicioInstitucional.consultarProtocolo('Grave'))
+})
+
+test('US02: T03 Test 3: actualiza protocolo al modificar gravedad', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto menor',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const incidenteActualizado =
+    await servicioIncidentes.actualizarGravedadIncidente(
+    incidente.id,
+    'Grave',
+    'FUN-3001'
+  )
+
+  assert.equal(incidenteActualizado.gravedad, 'Grave')
+  assert.equal(incidenteActualizado.protocolo, servicioInstitucional.consultarProtocolo('Grave'))
+})
+
+test('US02: T04 Test 1: actualiza gravedad y protocolo correctamente', async () => {
+
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const actualizado =
+    await servicioIncidentes.actualizarGravedadIncidente(
+      incidente.id,
+      'Grave',
+      'FUN-3001'
+    )
+
+  assert.equal(actualizado.gravedad, 'Grave')
+
+  assert.equal(
+    actualizado.protocolo,
+    servicioInstitucional.consultarProtocolo('Grave')
+  )
+})
+
+test('US02: T04 Test 2: rechaza gravedad invalida', async () => {
+
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioInstitucional = new ServicioInstitucional()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional,
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await assert.rejects(
+    () =>
+      servicioIncidentes.actualizarGravedadIncidente(
+        incidente.id,
+        'Urgente',
+        'FUN-3001'
+      ),
+    ErrorValidacionSistema
+  )
+})
+
+test('US02: T05 Test 1: registra evento de cambio de gravedad en auditoria', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await servicioIncidentes.actualizarGravedadIncidente(
+    incidente.id,
+    'Grave',
+    'FUN-3001'
+  )
+
+  const auditorias =
+    await persistenciaSistema.consultarAuditoriasPorIncidente(
+      incidente.id
+    )
+
+  const auditoria = auditorias.find(
+    (a) => a.accion === 'CAMBIO_GRAVEDAD'
+  )
+
+  assert.ok(auditoria)
+  assert.equal(auditoria.gravedadAnterior, 'Leve')
+  assert.equal(auditoria.gravedadNueva, 'Grave')
+  assert.equal(
+    auditoria.funcionarioResponsableId,
+    'FUN-3001'
+  )
+})
+
+test('US02: T05 Test 2: no registra auditoria si la gravedad no cambia', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await servicioIncidentes.actualizarGravedadIncidente(
+    incidente.id,
+    'Leve',
+    'FUN-3001'
+  )
+
+  const auditorias =
+    await persistenciaSistema.consultarAuditoriasPorIncidente(
+      incidente.id
+    )
+
+  const cambiosGravedad = auditorias.filter(
+    (a) => a.accion === 'CAMBIO_GRAVEDAD'
+  )
+
+  assert.equal(cambiosGravedad.length, 0)
+})
+
+test('US02: actualiza el estado de un incidente', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const actualizado = await servicioIncidentes.actualizarEstadoIncidente(
+    incidente.id,
+    'En seguimiento',
+    'FUN-3001'
+  )
+
+  assert.equal(actualizado.estado, 'En seguimiento')
+
+  const consultado = await servicioIncidentes.consultarIncidentePorId(incidente.id)
+
+  assert.equal(consultado.estado, 'En seguimiento')
+})
+
+test('US02: rechaza un estado de incidente invalido', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await assert.rejects(
+    () => servicioIncidentes.actualizarEstadoIncidente(incidente.id, 'Reabierto', 'FUN-3001'),
+    ErrorValidacionSistema
+  )
 })

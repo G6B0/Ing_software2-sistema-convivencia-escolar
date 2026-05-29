@@ -4,18 +4,26 @@ const ServicioInstitucional = require('./lib/servicioInstitucional')
 const { ErrorValidacionSistema } = require('./lib/erroresSistema')
 const { PersistenciaSistemaMemoria } = require('./lib/persistenciaSistema')
 const ServicioIncidentes = require('./lib/servicioIncidentes')
+const { ServicioAutenticacion } = require('./lib/servicioAutenticacion')
 const seguimientoRoutes = require('./routes/seguimientoroutes')
+const authRoutes = require('./routes/authRoutes')
 
 function crearApp({
   servicioInstitucional = new ServicioInstitucional(),
   persistenciaSistema = new PersistenciaSistemaMemoria(),
   servicioIncidentes = new ServicioIncidentes({ persistenciaSistema, servicioInstitucional }),
+  servicioAutenticacion = new ServicioAutenticacion({
+    persistenciaSistema,
+    servicioInstitucional,
+  }),
 } = {}) {
   const app = express()
 
   app.use(cors())
   app.use(express.json())
   app.locals.servicioIncidentes = servicioIncidentes
+  app.locals.servicioAutenticacion = servicioAutenticacion
+  app.use('/', authRoutes)
   app.use('/', seguimientoRoutes)
 
   app.get('/institucional/alumnos/:alumnoId', (req, res) => {
@@ -57,6 +65,20 @@ function crearApp({
     return res.json({ ok: true, data: funcionario })
   })
 
+  app.get('/institucional/cursos', (req, res) => {
+    const cursos = servicioInstitucional.listarCursos()
+    return res.json({ ok: true, data: cursos })
+  })
+
+  app.get('/institucional/cursos/:curso/alumnos', (req, res) => {
+    const alumnos = servicioInstitucional.listarAlumnosPorCurso(req.params.curso)
+    return res.json({ ok: true, data: alumnos })
+  })
+
+  app.get('/institucional/protocolos', (req, res) => {
+    return res.json({ ok: true, data: servicioInstitucional.protocolos })
+  })
+
   app.post('/incidentes', async (req, res) => {
     try {
       const incidente = await servicioIncidentes.registrarIncidente(req.body)
@@ -65,8 +87,17 @@ function crearApp({
       if (error instanceof ErrorValidacionSistema) {
         return res.status(400).json({ ok: false, mensaje: error.message })
       }
-
+      console.error(error)
       return res.status(500).json({ ok: false, mensaje: 'No se pudo registrar el incidente.' })
+    }
+  })
+
+  app.get('/incidentes', async (req, res) => {
+    try {
+      const incidentes = await servicioIncidentes.listarIncidentes()
+      return res.json({ ok: true, data: incidentes })
+    } catch (error) {
+      return res.status(500).json({ ok: false, mensaje: 'No se pudieron obtener los incidentes.' })
     }
   })
 

@@ -15,6 +15,7 @@ function desdeIncidenteSupabase(registro, participantes = []) {
     fecha: registro.fecha,
     descripcion: registro.descripcion,
     gravedad: registro.gravedad,
+    protocolo: registro.protocolo_nombre,
     estado: registro.estado,
     funcionarioResponsableId: registro.funcionario_responsable_id,
     creadoEn: registro.creado_en,
@@ -40,6 +41,8 @@ function desdeAuditoriaSupabase(registro) {
     funcionarioResponsableId: registro.funcionario_responsable_id,
     entidad: registro.entidad,
     identificadorRelacionado: registro.identificador_relacionado,
+    gravedadAnterior: registro.gravedad_anterior,
+    gravedadNueva: registro.gravedad_nueva,
   }
 }
 
@@ -164,15 +167,17 @@ class PersistenciaSistemaSupabase {
     )
 
     const { data: auditoria, error } = await this.supabase
-      .from('auditorias')
-      .insert({
-        id: datosAuditoria.id || crearId('AUD'),
-        accion: datosAuditoria.accion,
-        fecha: datosAuditoria.fecha,
-        funcionario_responsable_id: datosAuditoria.funcionarioResponsableId,
-        entidad: datosAuditoria.entidad,
-        identificador_relacionado: datosAuditoria.identificadorRelacionado,
-      })
+    .from('auditorias')
+    .insert({
+      id: datosAuditoria.id || crearId('AUD'),
+      accion: datosAuditoria.accion,
+      fecha: datosAuditoria.fecha,
+      funcionario_responsable_id: datosAuditoria.funcionarioResponsableId,
+      entidad: datosAuditoria.entidad,
+      identificador_relacionado: datosAuditoria.identificadorRelacionado,
+      gravedad_anterior: datosAuditoria.gravedadAnterior || null,
+      gravedad_nueva: datosAuditoria.gravedadNueva || null,
+    })
       .select('*')
       .single()
 
@@ -230,6 +235,44 @@ class PersistenciaSistemaSupabase {
     asegurarSinError(error, 'No se pudieron consultar los seguimientos')
     return seguimientos.map((seguimiento) => desdeSeguimientoSupabase(seguimiento))
   }
+  async actualizarGravedadIncidente(incidenteId, nuevaGravedad, protocolo) {
+    const { data: incidente, error } = await this.supabase
+      .from('incidentes')
+      .update({
+        gravedad: nuevaGravedad,
+      })
+      .eq('id', incidenteId)
+      .select('*')
+      .single()
+
+    asegurarSinError(error, 'No se pudo actualizar la gravedad del incidente')
+
+    const participantes = await this.consultarParticipantesPorIncidente(incidenteId)
+
+    return desdeIncidenteSupabase(incidente, participantes)
+  }
+
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado) {
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    const { data: incidente, error } = await this.supabase
+      .from('incidentes')
+      .update({
+        estado: nuevoEstado,
+      })
+      .eq('id', incidenteId)
+      .select('*')
+      .single()
+
+    asegurarSinError(error, 'No se pudo actualizar el estado del incidente')
+
+    const participantes = await this.consultarParticipantesPorIncidente(incidenteId)
+
+    return desdeIncidenteSupabase(incidente, participantes)
+  }
+
 }
 
 module.exports = PersistenciaSistemaSupabase

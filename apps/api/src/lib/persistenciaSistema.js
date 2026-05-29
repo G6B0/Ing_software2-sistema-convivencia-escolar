@@ -9,7 +9,13 @@ const CAMPOS_INCIDENTE_REQUERIDOS = [
   'funcionarioResponsableId',
 ]
 
-const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
+const ESTADOS_INCIDENTE = new Set(['Abierto', 'En seguimiento', 'Cerrado'])
+const GRAVEDADES_INCIDENTE = new Set([
+  'Leve',
+  'Moderado',
+  'Grave',
+])
+
 const ROLES_PARTICIPANTE_INCIDENTE = new Set(['Agresor', 'Victima', 'Testigo', 'Involucrado'])
 const CAMPOS_SEGUIMIENTO_REQUERIDOS = [
   'incidenteId',
@@ -57,12 +63,16 @@ class PersistenciaSistemaMemoria {
     validarCamposRequeridos(datosIncidente, CAMPOS_INCIDENTE_REQUERIDOS, 'Incidente')
     validarParticipantes(datosIncidente.participantes)
 
+    if (!GRAVEDADES_INCIDENTE.has(datosIncidente.gravedad)) {
+      throw new ErrorValidacionSistema('La gravedad del incidente no es valida.')
+    }
     const incidente = {
       id: datosIncidente.id || crearId('INC'),
       titulo: datosIncidente.titulo,
       fecha: datosIncidente.fecha,
       descripcion: datosIncidente.descripcion,
       gravedad: datosIncidente.gravedad,
+      protocolo: datosIncidente.protocolo,
       estado: 'Abierto',
       funcionarioResponsableId: datosIncidente.funcionarioResponsableId,
       creadoEn: datosIncidente.creadoEn || new Date().toISOString(),
@@ -86,6 +96,51 @@ class PersistenciaSistemaMemoria {
       ...incidente,
       participantes,
     }
+  }
+
+  async actualizarGravedadIncidente(
+    incidenteId,
+    nuevaGravedad,
+    protocolo
+  ) {
+    const incidente = this.incidentes.get(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema(
+        'El incidente no existe.'
+      )
+    }
+
+    if (!GRAVEDADES_INCIDENTE.has(nuevaGravedad)) {
+      throw new ErrorValidacionSistema(
+        'La gravedad del incidente no es valida.'
+      )
+    }
+
+    incidente.gravedad = nuevaGravedad
+    incidente.protocolo = protocolo
+
+    this.incidentes.set(incidenteId, incidente)
+
+    return incidente
+  }
+
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado) {
+    const incidente = this.incidentes.get(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente no existe.')
+    }
+
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    incidente.estado = nuevoEstado
+
+    this.incidentes.set(incidenteId, incidente)
+
+    return incidente
   }
 
   async consultarIncidentePorId(incidenteId) {
@@ -118,20 +173,23 @@ class PersistenciaSistemaMemoria {
   async guardarAuditoria(datosAuditoria) {
     validarCamposRequeridos(
       datosAuditoria,
-      ['accion', 'fecha', 'funcionarioResponsableId', 'entidad', 'identificadorRelacionado'],
+      [
+        'accion',
+        'fecha',
+        'funcionarioResponsableId',
+        'entidad',
+        'identificadorRelacionado',
+      ],
       'Auditoria'
     )
 
     const auditoria = {
       id: datosAuditoria.id || crearId('AUD'),
-      accion: datosAuditoria.accion,
-      fecha: datosAuditoria.fecha,
-      funcionarioResponsableId: datosAuditoria.funcionarioResponsableId,
-      entidad: datosAuditoria.entidad,
-      identificadorRelacionado: datosAuditoria.identificadorRelacionado,
+      ...datosAuditoria,
     }
 
     this.auditorias.set(auditoria.id, auditoria)
+
     return auditoria
   }
 
@@ -178,6 +236,7 @@ module.exports = {
   CAMPOS_SEGUIMIENTO_REQUERIDOS,
   crearId,
   ESTADOS_INCIDENTE,
+  GRAVEDADES_INCIDENTE,
   PersistenciaSistemaMemoria,
   ROLES_PARTICIPANTE_INCIDENTE,
   validarCamposRequeridos,
