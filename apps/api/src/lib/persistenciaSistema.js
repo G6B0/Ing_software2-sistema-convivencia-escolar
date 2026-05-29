@@ -9,7 +9,7 @@ const CAMPOS_INCIDENTE_REQUERIDOS = [
   'funcionarioResponsableId',
 ]
 
-const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
+const ESTADOS_INCIDENTE = new Set(['Abierto', 'En seguimiento', 'Cerrado'])
 const GRAVEDADES_INCIDENTE = new Set([
   'Leve',
   'Moderado',
@@ -119,6 +119,24 @@ class PersistenciaSistemaMemoria {
 
     incidente.gravedad = nuevaGravedad
     incidente.protocolo = protocolo
+
+    this.incidentes.set(incidenteId, incidente)
+
+    return incidente
+  }
+
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado) {
+    const incidente = this.incidentes.get(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente no existe.')
+    }
+
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    incidente.estado = nuevoEstado
 
     this.incidentes.set(incidenteId, incidente)
 

@@ -1,4 +1,5 @@
 const { ErrorValidacionSistema } = require('./erroresSistema')
+const { ESTADOS_INCIDENTE } = require('./persistenciaSistema')
 
 function obtenerFechaLocalISO() {
   const fecha = new Date()
@@ -169,6 +170,45 @@ class ServicioIncidentes {
       identificadorRelacionado: incidenteId,
       gravedadAnterior,
       gravedadNueva: nuevaGravedad,
+    })
+
+    return incidenteActualizado
+  }
+
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado, funcionarioSesionId) {
+    const funcionario = this.servicioInstitucional.consultarFuncionario(funcionarioSesionId)
+
+    if (!funcionario) {
+      throw new ErrorValidacionSistema('El funcionario responsable no existe.')
+    }
+
+    const incidente = await this.consultarIncidentePorId(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente no existe.')
+    }
+
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    const estadoAnterior = incidente.estado
+
+    if (estadoAnterior === nuevoEstado) {
+      return incidente
+    }
+
+    const incidenteActualizado = await this.persistenciaSistema.actualizarEstadoIncidente(
+      incidenteId,
+      nuevoEstado
+    )
+
+    await this.persistenciaSistema.guardarAuditoria({
+      accion: 'CAMBIO_ESTADO',
+      fecha: new Date().toISOString(),
+      funcionarioResponsableId: funcionario.id,
+      entidad: 'incidente',
+      identificadorRelacionado: incidenteId,
     })
 
     return incidenteActualizado

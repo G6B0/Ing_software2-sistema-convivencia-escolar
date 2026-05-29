@@ -76,4 +76,39 @@ const actualizarGravedadIncidente = async (req, res) => {
   }
 };
 
-module.exports = { registrarSeguimiento, obtenerSeguimientos, actualizarGravedadIncidente }
+const actualizarEstadoIncidente = async (req, res) => {
+  try {
+    const incidenteId = req.params.id
+    const { estado } = req.body
+    const funcionarioSesionId = req.header('x-funcionario-id')
+    const servicioIncidentes = req.app.locals.servicioIncidentes
+
+    const incidenteActualizado = await servicioIncidentes.actualizarEstadoIncidente(
+      incidenteId,
+      estado,
+      funcionarioSesionId
+    )
+
+    return res.status(200).json({
+      mensaje: 'Estado actualizado con exito',
+      incidente: incidenteActualizado,
+    })
+  } catch (error) {
+    if (error.name === 'ErrorValidacionSistema') {
+      return res.status(400).json({
+        error: error.message,
+      })
+    }
+    console.error(error)
+    return res.status(500).json({
+      error: 'Error interno del servidor',
+    })
+  }
+}
+
+module.exports = {
+  registrarSeguimiento,
+  obtenerSeguimientos,
+  actualizarGravedadIncidente,
+  actualizarEstadoIncidente,
+}

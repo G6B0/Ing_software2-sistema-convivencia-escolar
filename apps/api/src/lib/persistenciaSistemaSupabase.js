@@ -252,6 +252,27 @@ class PersistenciaSistemaSupabase {
     return desdeIncidenteSupabase(incidente, participantes)
   }
 
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado) {
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    const { data: incidente, error } = await this.supabase
+      .from('incidentes')
+      .update({
+        estado: nuevoEstado,
+      })
+      .eq('id', incidenteId)
+      .select('*')
+      .single()
+
+    asegurarSinError(error, 'No se pudo actualizar el estado del incidente')
+
+    const participantes = await this.consultarParticipantesPorIncidente(incidenteId)
+
+    return desdeIncidenteSupabase(incidente, participantes)
+  }
+
 }
 
 module.exports = PersistenciaSistemaSupabase

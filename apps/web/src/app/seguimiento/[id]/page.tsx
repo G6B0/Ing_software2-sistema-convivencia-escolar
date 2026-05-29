@@ -19,12 +19,6 @@ export default function SeguimientoIncidentePage() {
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [loadingSeguimientos, setLoadingSeguimientos] = useState(true);
 
-  // Formulario nueva acción
-  const [accion, setAccion] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [evolucionCaso, setEvolucionCaso] = useState('');
-  const [enviando, setEnviando] = useState(false);
-
   // Sesión del funcionario
   const [funcionarioId, setFuncionarioId] = useState('');
 
@@ -109,6 +103,39 @@ export default function SeguimientoIncidentePage() {
     if (g === 'Moderado') return { texto, color: '#92400e', bg: '#fef3c7', icono: 'bi-exclamation-triangle-fill' };
     if (g === 'Grave') return { texto, color: '#991b1b', bg: '#fee2e2', icono: 'bi-x-octagon-fill' };
     return { texto, color: '#475569', bg: '#f1f5f9', icono: 'bi-question-circle' };
+  };
+
+  const actualizarEstado = async (nuevoEstado: string) => {
+    if (!incidente) return;
+
+    const estadoAnterior = incidente.estado;
+    setIncidente({ ...incidente, estado: nuevoEstado });
+
+    try {
+      const response = await fetch(`${API_URL}/incidentes/${incidente.id}/estado`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-funcionario-id': funcionarioId || 'FUN-3001'
+        },
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.incidente) {
+          setIncidente((actual: any) => ({ ...actual, ...data.incidente }));
+        }
+        return;
+      }
+
+      const err = await response.json().catch(() => null);
+      setIncidente((actual: any) => ({ ...actual, estado: estadoAnterior }));
+      alert(err?.error || 'Error al actualizar estado');
+    } catch {
+      setIncidente((actual: any) => ({ ...actual, estado: estadoAnterior }));
+      alert('Error de conexion');
+    }
   };
 
   if (loading) {
@@ -386,7 +413,7 @@ export default function SeguimientoIncidentePage() {
             </label>
             <select
               value={incidente.estado}
-              onChange={(e) => setIncidente({ ...incidente, estado: e.target.value })}
+              onChange={(e) => actualizarEstado(e.target.value)}
               style={{
                 padding: '12px 20px',
                 borderRadius: 10,
@@ -494,153 +521,6 @@ export default function SeguimientoIncidentePage() {
         )}
       </div>
 
-      {/* Registrar nueva acción */}
-      <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px' }}>
-        <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <i className="bi bi-plus-circle" style={{ color: '#3b82f6' }} />
-          Registrar nueva accion
-        </h3>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
-              Accion realizada <span style={{ color: '#dc2626' }}>*</span>
-            </label>
-            <input
-              type="text"
-              value={accion}
-              onChange={e => setAccion(e.target.value)}
-              placeholder="Ej: Citacion a apoderado, Mediacion escolar..."
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                borderRadius: 8,
-                border: '1.5px solid #e2e8f0',
-                fontSize: 14,
-                fontFamily: 'inherit',
-                color: '#0f172a',
-                outline: 'none',
-                boxSizing: 'border-box' as const
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
-              Evolucion del caso <span style={{ color: '#dc2626' }}>*</span>
-            </label>
-            <select
-              value={evolucionCaso}
-              onChange={e => setEvolucionCaso(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                borderRadius: 8,
-                border: '1.5px solid #e2e8f0',
-                fontSize: 14,
-                fontFamily: 'inherit',
-                color: '#0f172a',
-                outline: 'none',
-                boxSizing: 'border-box' as const
-              }}
-            >
-              <option value="">Seleccionar...</option>
-              <option value="En progreso">En progreso</option>
-              <option value="Mejorando">Mejorando</option>
-              <option value="Sin cambios">Sin cambios</option>
-              <option value="Empeorando">Empeorando</option>
-              <option value="Resuelto">Resuelto</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
-            Notas y observaciones <span style={{ color: '#dc2626' }}>*</span>
-          </label>
-          <textarea
-            value={descripcion}
-            onChange={e => setDescripcion(e.target.value)}
-            placeholder="Describa las observaciones del seguimiento..."
-            rows={3}
-            style={{
-              width: '100%',
-              padding: '9px 12px',
-              borderRadius: 8,
-              border: '1.5px solid #e2e8f0',
-              fontSize: 14,
-              fontFamily: 'inherit',
-              color: '#0f172a',
-              outline: 'none',
-              resize: 'vertical' as const,
-              boxSizing: 'border-box' as const
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            disabled={enviando || !accion.trim() || !descripcion.trim() || !evolucionCaso}
-            onClick={async () => {
-              setEnviando(true);
-              try {
-                const response = await fetch(`${API_URL}/incidentes/${incidente.id}/seguimientos`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'x-funcionario-id': funcionarioId || 'FUN-3001'
-                  },
-                  body: JSON.stringify({
-                    accion: accion.trim(),
-                    descripcion: descripcion.trim(),
-                    evolucionCaso,
-                    fecha: new Date().toISOString().split('T')[0]
-                  })
-                });
-
-                if (response.ok) {
-                  setAccion('');
-                  setDescripcion('');
-                  setEvolucionCaso('');
-                  await cargarSeguimientos();
-                } else {
-                  const err = await response.json();
-                  alert(err.error || 'Error al registrar seguimiento');
-                }
-              } catch {
-                alert('Error de conexion');
-              } finally {
-                setEnviando(false);
-              }
-            }}
-            style={{
-              padding: '10px 20px',
-              background: (!accion.trim() || !descripcion.trim() || !evolucionCaso || enviando) ? '#94a3b8' : '#0f172a',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: (!accion.trim() || !descripcion.trim() || !evolucionCaso || enviando) ? 'not-allowed' : 'pointer',
-              fontFamily: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            {enviando ? (
-              <>
-                <i className="bi bi-arrow-repeat" style={{ animation: 'spin 0.9s linear infinite' }} />
-                Registrando...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-check-circle" />
-                Registrar accion
-              </>
-            )}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

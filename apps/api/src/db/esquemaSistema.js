@@ -10,7 +10,7 @@ const esquemaSistema = {
       estado: {
         tipo: 'string',
         requerido: true,
-        valoresPermitidos: ['Abierto', 'Cerrado', 'Reabierto'],
+        valoresPermitidos: ['Abierto', 'En seguimiento', 'Cerrado'],
       },
       funcionarioResponsableId: {
         tipo: 'string',
