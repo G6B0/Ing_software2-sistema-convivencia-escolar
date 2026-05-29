@@ -4,7 +4,7 @@ create table if not exists incidentes (
   fecha timestamptz not null,
   descripcion text not null,
   gravedad text not null,
-  estado text not null check (estado in ('Abierto', 'Cerrado', 'Reabierto')),
+  estado text not null check (estado in ('Abierto', 'En seguimiento', 'Cerrado')),
   funcionario_responsable_id text not null,
   creado_en timestamptz not null default now()
 );

@@ -110,11 +110,11 @@ test('T02 Test 2: un incidente guardado queda asociado a un identificador unico'
   assert.equal(new Set(incidentes.map((incidente) => incidente.id)).size, incidentes.length)
 })
 
-test('T02 Test 3: incidentes soporta estados Abierto, Cerrado y Reabierto', () => {
+test('T02 Test 3: incidentes soporta estados Abierto, En seguimiento y Cerrado', () => {
   assert.deepEqual(esquemaSistema.incidentes.campos.estado.valoresPermitidos, [
     'Abierto',
+    'En seguimiento',
     'Cerrado',
-    'Reabierto',
   ])
 })
 
@@ -503,6 +503,52 @@ test('API incidentes: permite guardar y consultar un incidente posteriormente', 
     assert.equal(consulta.data.funcionarioResponsable.nombre, 'Ana Morales')
     assert.equal(consulta.data.participantes[0].alumnoInstitucionalId, 'ALU-1001')
     assert.equal(consulta.data.participantes[0].nombreAlumno, 'Camila Rojas')
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
+})
+
+test('API incidentes: actualiza el estado de un incidente', async () => {
+  const app = crearApp()
+  const server = app.listen(0)
+
+  try {
+    const { port } = server.address()
+    const baseUrl = `http://127.0.0.1:${port}`
+
+    const respuestaCreacion = await fetch(`${baseUrl}/incidentes`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        titulo: 'Agresion verbal en recreo',
+        fecha: '2026-05-14T10:00:00.000Z',
+        descripcion: 'Alumno reporta agresion verbal durante el recreo.',
+        gravedad: 'Moderado',
+        funcionarioResponsableId: 'FUN-3001',
+        participantes: [
+          { alumnoInstitucionalId: 'ALU-1001', rolEnIncidente: 'Victima' },
+        ],
+      }),
+    })
+    const creacion = await respuestaCreacion.json()
+
+    const respuestaActualizacion = await fetch(`${baseUrl}/incidentes/${creacion.data.id}/estado`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-funcionario-id': 'FUN-3001',
+      },
+      body: JSON.stringify({ estado: 'En seguimiento' }),
+    })
+    const actualizacion = await respuestaActualizacion.json()
+
+    assert.equal(respuestaActualizacion.status, 200)
+    assert.equal(actualizacion.incidente.estado, 'En seguimiento')
+
+    const respuestaConsulta = await fetch(`${baseUrl}/incidentes/${creacion.data.id}`)
+    const consulta = await respuestaConsulta.json()
+
+    assert.equal(consulta.data.estado, 'En seguimiento')
   } finally {
     await new Promise((resolve) => server.close(resolve))
   }

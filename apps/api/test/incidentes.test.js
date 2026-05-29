@@ -650,3 +650,66 @@ test('US02: T05 Test 2: no registra auditoria si la gravedad no cambia', async (
 
   assert.equal(cambiosGravedad.length, 0)
 })
+
+test('US02: actualiza el estado de un incidente', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const actualizado = await servicioIncidentes.actualizarEstadoIncidente(
+    incidente.id,
+    'En seguimiento',
+    'FUN-3001'
+  )
+
+  assert.equal(actualizado.estado, 'En seguimiento')
+
+  const consultado = await servicioIncidentes.consultarIncidentePorId(incidente.id)
+
+  assert.equal(consultado.estado, 'En seguimiento')
+})
+
+test('US02: rechaza un estado de incidente invalido', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await assert.rejects(
+    () => servicioIncidentes.actualizarEstadoIncidente(incidente.id, 'Reabierto', 'FUN-3001'),
+    ErrorValidacionSistema
+  )
+})
