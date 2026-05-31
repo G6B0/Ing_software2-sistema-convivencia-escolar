@@ -165,13 +165,18 @@ export default function RegistrarSeguimientoPage() {
         {/* Campo Evolución */}
         <div>
           <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>Evolución del Caso</label>
-          <textarea 
-            value={evolucionCaso} 
+          <select
+            value={evolucionCaso}
             onChange={(e) => setEvolucionCaso(e.target.value)}
-            placeholder="¿Cómo avanza el caso tras esta acción?"
-            rows={2}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${errores.evolucionCaso ? '#ef4444' : '#e2e8f0'}` }}
-          />
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${errores.evolucionCaso ? '#ef4444' : '#e2e8f0'}`, background: '#fff', fontSize: 14, fontFamily: 'inherit' }}
+          >
+            <option value="">-- Seleccionar evolución --</option>
+            <option value="En progreso">En progreso</option>
+            <option value="Mejorando">Mejorando</option>
+            <option value="Sin cambios">Sin cambios</option>
+            <option value="Empeorando">Empeorando</option>
+            <option value="Resuelto">Resuelto</option>
+          </select>
           {errores.evolucionCaso && <span style={{ color: '#ef4444', fontSize: 12, marginTop: 4, display: 'block' }}>{errores.evolucionCaso}</span>}
         </div>
 
