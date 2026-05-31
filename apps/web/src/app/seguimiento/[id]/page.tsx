@@ -411,26 +411,37 @@ export default function SeguimientoIncidentePage() {
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>
               Estado actual
             </label>
-            <select
-              value={incidente.estado}
-              onChange={(e) => actualizarEstado(e.target.value)}
-              style={{
-                padding: '12px 20px',
-                borderRadius: 10,
-                border: '1.5px solid #e2e8f0',
-                fontSize: 16,
-                fontFamily: 'inherit',
-                color: '#4338ca',
-                fontWeight: 600,
-                background: '#fff',
-                cursor: 'pointer',
-                minWidth: 220
-              }}
-            >
-              <option value="Abierto">Abierto</option>
-              <option value="En seguimiento">En seguimiento</option>
-              <option value="Cerrado">Cerrado</option>
-            </select>
+            {(() => {
+              const estadoColores: Record<string, { bg: string; color: string }> = {
+                'Abierto': { bg: '#dbeafe', color: '#1e40af' },
+                'En seguimiento': { bg: '#e9d5ff', color: '#7c3aed' },
+                'Cerrado': { bg: '#e2e8f0', color: '#475569' },
+              };
+              const estilo = estadoColores[incidente.estado] || { bg: '#fff', color: '#0f172a' };
+
+              return (
+                <select
+                  value={incidente.estado}
+                  onChange={(e) => actualizarEstado(e.target.value)}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: 10,
+                    border: '1.5px solid #e2e8f0',
+                    fontSize: 16,
+                    fontFamily: 'inherit',
+                    color: estilo.color,
+                    fontWeight: 600,
+                    background: estilo.bg,
+                    cursor: 'pointer',
+                    minWidth: 220
+                  }}
+                >
+                  <option value="Abierto">Abierto</option>
+                  <option value="En seguimiento">En seguimiento</option>
+                  <option value="Cerrado">Cerrado</option>
+                </select>
+              );
+            })()}
           </div>
         </div>
 
