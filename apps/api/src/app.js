@@ -113,6 +113,20 @@ function crearApp({
 
     return res.json({ ok: true, data: incidente })
   })
+  
+  app.get('/notificaciones', async (req, res) => {
+    try {
+      const destinatarioId = req.header('x-funcionario-id')
+      if (!destinatarioId) {
+        return res.status(400).json({ ok: false, mensaje: 'Falta el header x-funcionario-id' })
+      }
+      const notificaciones = await persistenciaSistema.consultarNotificacionesPorDestinatario(destinatarioId)
+      return res.json({ ok: true, data: notificaciones })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ ok: false, mensaje: 'No se pudieron obtener las notificaciones.' })
+    }
+  })
 
   app.get('/test-supabase', async (_req, res) => {
     try {
