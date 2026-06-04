@@ -257,6 +257,12 @@
       "rol": "orientador"
     },
     {
+      "id": "FUN-3009",
+      "nombre": "Claudia Riquelme",
+      "correoInstitucional": "claudia.riquelme@colegio.cl",
+      "rol": "director"
+    },
+    {
       "id": "FUN-3008",
       "nombre": "Sebastian Torres",
       "correoInstitucional": "sebastian.torres@colegio.cl",

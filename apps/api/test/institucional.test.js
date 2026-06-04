@@ -73,6 +73,7 @@ test('T02 Test 3: cada funcionario tiene un rol institucional permitido', () => 
     'orientador',
     'convivencia escolar',
     'administrador',
+    'director',
   ])
 
   datosInstitucionales.funcionarios.forEach((funcionario) => {
