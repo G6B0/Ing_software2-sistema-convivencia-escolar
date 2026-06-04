@@ -272,6 +272,23 @@ class PersistenciaSistemaSupabase {
 
     return desdeIncidenteSupabase(incidente, participantes)
   }
+  async consultarNotificacionesPorDestinatario(destinatarioId) {
+    const { data: notificaciones, error } = await this.supabase
+      .from('notificaciones')
+      .select('*')
+      .eq('destinatario_id', destinatarioId)
+      .order('fecha_creacion', { ascending: false })
+
+    asegurarSinError(error, 'No se pudieron consultar las notificaciones')
+    return notificaciones.map(n => ({
+      id: n.id,
+      titulo: n.titulo,
+      incidenteId: n.incidente_id,
+      fechaCreacion: n.fecha_creacion,
+      leida: n.leida,
+      destinatarioId: n.destinatario_id,
+    }))
+  }
 
 }
 
