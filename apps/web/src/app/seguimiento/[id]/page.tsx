@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter,  useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
 
@@ -15,12 +15,17 @@ export default function SeguimientoIncidentePage() {
   const [loading, setLoading] = useState(true);
   const [protocolos, setProtocolos] = useState<Record<string, string>>({});
 
+  const [mensajeGravedad, setMensajeGravedad] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+
   // Seguimientos
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [loadingSeguimientos, setLoadingSeguimientos] = useState(true);
 
   // Sesión del funcionario
   const [funcionarioId, setFuncionarioId] = useState('');
+
+  const searchParams = useSearchParams();
+  const [mensajeExito, setMensajeExito] = useState(searchParams.get('exito') === '1');
 
   useEffect(() => {
     try {
@@ -293,6 +298,21 @@ export default function SeguimientoIncidentePage() {
       </div>
 
         {/* Cambiar gravedad */}
+        {mensajeGravedad && (
+          <div style={{
+            marginTop: 24,
+            padding: '16px 20px',
+            borderRadius: 10,
+            border: '1px solid',
+            background: mensajeGravedad.tipo === 'success' ? '#dcfce7' : '#fee2e2',
+            borderColor: mensajeGravedad.tipo === 'success' ? '#16a34a' : '#dc2626',
+            color: mensajeGravedad.tipo === 'success' ? '#15803d' : '#991b1b',
+            fontSize: 14,
+            fontWeight: 500,
+          }}>
+            {mensajeGravedad.texto}
+          </div>
+        )}
         <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Cambiar gravedad:</span>
           <select
@@ -309,17 +329,18 @@ export default function SeguimientoIncidentePage() {
               try {
                 const response = await fetch(`${API_URL}/incidentes/${incidente.id}/gravedad`, {
                   method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json', 'x-funcionario-id': funcionarioId || 'FUN-3001' },
+                  headers: { 'Content-Type': 'application/json', 'x-funcionario-id': 'FUN-3001' },
                   body: JSON.stringify({ gravedad: incidente.gravedad })
                 });
                 if (response.ok) {
-                  alert('Gravedad actualizada correctamente');
+                  setMensajeGravedad({ tipo: 'success', texto: 'Gravedad actualizada correctamente' });
                 } else {
-                  alert('Error al actualizar');
+                  setMensajeGravedad({ tipo: 'error', texto: 'Error al actualizar la gravedad' });
                 }
               } catch {
-                alert('Error de conexión');
+                setMensajeGravedad({ tipo: 'error', texto: 'Error de conexion' });
               }
+              setTimeout(() => setMensajeGravedad(null), 3000);
             }}
             style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
           >
