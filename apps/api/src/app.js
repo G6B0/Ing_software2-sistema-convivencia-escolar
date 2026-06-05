@@ -1,10 +1,12 @@
 const express = require('express')
 const cors = require('cors')
 const ServicioInstitucional = require('./lib/servicioInstitucional')
-const { ErrorValidacionSistema } = require('./lib/erroresSistema')
+const { ErrorAutorizacionSistema, ErrorValidacionSistema } = require('./lib/erroresSistema')
 const { PersistenciaSistemaMemoria } = require('./lib/persistenciaSistema')
 const ServicioIncidentes = require('./lib/servicioIncidentes')
 const { ServicioAutenticacion } = require('./lib/servicioAutenticacion')
+const ServicioAutorizacion = require('./lib/servicioAutorizacion')
+const { PERMISOS } = require('./lib/rolesPermisos')
 const seguimientoRoutes = require('./routes/seguimientoroutes')
 const authRoutes = require('./routes/authRoutes')
 
@@ -16,6 +18,9 @@ function crearApp({
     persistenciaSistema,
     servicioInstitucional,
   }),
+  servicioAutorizacion = new ServicioAutorizacion({
+    servicioInstitucional,
+  }),
 } = {}) {
   const app = express()
 
@@ -23,6 +28,7 @@ function crearApp({
   app.use(express.json())
   app.locals.servicioIncidentes = servicioIncidentes
   app.locals.servicioAutenticacion = servicioAutenticacion
+  app.locals.servicioAutorizacion = servicioAutorizacion
   app.use('/', authRoutes)
   app.use('/', seguimientoRoutes)
 
@@ -81,9 +87,18 @@ function crearApp({
 
   app.post('/incidentes', async (req, res) => {
     try {
+      servicioAutorizacion.verificarPermisoFuncionario(
+        req.header('x-funcionario-id') || req.body.funcionarioResponsableId,
+        PERMISOS.REGISTRAR_INCIDENTES
+      )
+
       const incidente = await servicioIncidentes.registrarIncidente(req.body)
       return res.status(201).json({ ok: true, data: incidente })
     } catch (error) {
+      if (error instanceof ErrorAutorizacionSistema) {
+        return res.status(403).json({ ok: false, mensaje: error.message })
+      }
+
       if (error instanceof ErrorValidacionSistema) {
         return res.status(400).json({ ok: false, mensaje: error.message })
       }

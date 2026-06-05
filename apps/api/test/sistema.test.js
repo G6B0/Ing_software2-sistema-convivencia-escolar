@@ -536,7 +536,7 @@ test('API incidentes: actualiza el estado de un incidente', async () => {
       method: 'PATCH',
       headers: {
         'content-type': 'application/json',
-        'x-funcionario-id': 'FUN-3001',
+        'x-funcionario-id': 'FUN-3002',
       },
       body: JSON.stringify({ estado: 'En seguimiento' }),
     })
