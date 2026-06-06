@@ -128,6 +128,21 @@ function crearApp({
     }
   })
 
+  app.patch('/notificaciones/:notificacionId/leida', async (req, res) => {
+    try {
+      const notificacion = await persistenciaSistema.marcarNotificacionLeida(req.params.notificacionId)
+
+      if (!notificacion) {
+        return res.status(404).json({ ok: false, mensaje: 'Notificación no encontrada.' })
+      }
+
+      return res.json({ ok: true, data: notificacion })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ ok: false, mensaje: 'No se pudo marcar la notificación como leída.' })
+    }
+  })
+
   app.get('/test-supabase', async (_req, res) => {
     try {
       const { crearClienteSupabase } = require('./lib/supabase')

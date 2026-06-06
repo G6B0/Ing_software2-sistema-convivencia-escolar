@@ -1,5 +1,6 @@
 const { ErrorValidacionSistema } = require('./erroresSistema')
 const { ESTADOS_INCIDENTE } = require('./persistenciaSistema')
+const { crearId } = require('./persistenciaSistema')
 
 function obtenerFechaLocalISO() {
   const fecha = new Date()
@@ -57,6 +58,20 @@ class ServicioIncidentes {
       entidad: 'incidente',
       identificadorRelacionado: incidente.id,
     })
+    if (datosIncidente.gravedad === 'Grave') {
+      console.log('Generando notificación para incidente grave...')
+      const director = this.servicioInstitucional.consultarDirector()
+      console.log('Director encontrado:', director)
+      if (director) {
+        await this.persistenciaSistema.guardarNotificacion({
+          id: crearId('NOT'),
+          titulo: `Incidente grave: ${incidente.titulo}`,
+          incidenteId: incidente.id,
+          fechaCreacion: new Date().toISOString(),
+          destinatarioId: director.id,
+        })
+      }
+    }
 
     return incidente
   }
