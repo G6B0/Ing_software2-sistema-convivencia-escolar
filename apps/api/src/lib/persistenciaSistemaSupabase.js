@@ -272,6 +272,69 @@ class PersistenciaSistemaSupabase {
 
     return desdeIncidenteSupabase(incidente, participantes)
   }
+  async consultarNotificacionesPorDestinatario(destinatarioId) {
+    const { data: notificaciones, error } = await this.supabase
+      .from('notificaciones')
+      .select('*')
+      .eq('destinatario_id', destinatarioId)
+      .order('fecha_creacion', { ascending: false })
+
+    asegurarSinError(error, 'No se pudieron consultar las notificaciones')
+    return notificaciones.map(n => ({
+      id: n.id,
+      titulo: n.titulo,
+      incidenteId: n.incidente_id,
+      fechaCreacion: n.fecha_creacion,
+      leida: n.leida,
+      destinatarioId: n.destinatario_id,
+    }))
+  }
+  async marcarNotificacionLeida(notificacionId) {
+    const { data: notificacion, error } = await this.supabase
+      .from('notificaciones')
+      .update({ leida: true })
+      .eq('id', notificacionId)
+      .select('*')
+      .maybeSingle()
+
+    asegurarSinError(error, 'No se pudo marcar la notificación como leída')
+
+    if (!notificacion) return null
+
+    return {
+      id: notificacion.id,
+      titulo: notificacion.titulo,
+      incidenteId: notificacion.incidente_id,
+      fechaCreacion: notificacion.fecha_creacion,
+      leida: notificacion.leida,
+      destinatarioId: notificacion.destinatario_id,
+    }
+  }
+  async guardarNotificacion(datosNotificacion) {
+    const { data: notificacion, error } = await this.supabase
+      .from('notificaciones')
+      .insert({
+        id: datosNotificacion.id,
+        titulo: datosNotificacion.titulo,
+        incidente_id: datosNotificacion.incidenteId,
+        fecha_creacion: datosNotificacion.fechaCreacion,
+        leida: false,
+        destinatario_id: datosNotificacion.destinatarioId,
+      })
+      .select('*')
+      .single()
+
+    asegurarSinError(error, 'No se pudo guardar la notificación')
+
+    return {
+      id: notificacion.id,
+      titulo: notificacion.titulo,
+      incidenteId: notificacion.incidente_id,
+      fechaCreacion: notificacion.fecha_creacion,
+      leida: notificacion.leida,
+      destinatarioId: notificacion.destinatario_id,
+    }
+  }
 
 }
 

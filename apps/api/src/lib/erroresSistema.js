@@ -12,7 +12,15 @@ class ErrorConfiguracionBaseDatos extends Error {
   }
 }
 
+class ErrorAutorizacionSistema extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'ErrorAutorizacionSistema'
+  }
+}
+
 module.exports = {
+  ErrorAutorizacionSistema,
   ErrorConfiguracionBaseDatos,
   ErrorValidacionSistema,
 }

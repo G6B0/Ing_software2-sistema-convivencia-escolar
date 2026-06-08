@@ -87,9 +87,8 @@ export default function RegistrarSeguimientoPage() {
         return;
       }
 
-      // ÉXITO: Volvemos a la pantalla del incidente
-      alert('Seguimiento guardado con éxito');
-      router.push(`/seguimiento/${incidenteId}`);
+      // ÉXITO: Redirige con mensaje de exito en la URL
+      router.push(`/seguimiento/${incidenteId}?exito=1`);
 
     } catch (error) {
       setErrores({ general: 'Error de conexión con el servidor. Intenta nuevamente.' });
