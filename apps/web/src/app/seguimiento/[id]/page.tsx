@@ -68,7 +68,7 @@ export default function SeguimientoIncidentePage() {
     try {
       setLoadingSeguimientos(true);
       const response = await fetch(`${API_URL}/incidentes/${id}/seguimientos`, {
-        headers: { 'x-funcionario-id': funcionarioId || 'FUN-3001' }
+        headers: { 'x-funcionario-id': funcionarioId || 'FUN-300FUN-3002' }
       });
       if (response.ok) {
         const data = await response.json();
@@ -121,7 +121,7 @@ export default function SeguimientoIncidentePage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-funcionario-id': funcionarioId || 'FUN-3001'
+          'x-funcionario-id': funcionarioId || 'FUN-3002'
         },
         body: JSON.stringify({ estado: nuevoEstado })
       });
@@ -346,7 +346,7 @@ export default function SeguimientoIncidentePage() {
             try {
               const response = await fetch(`${API_URL}/incidentes/${incidente.id}/gravedad`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'x-funcionario-id': 'FUN-3001' },
+                headers: { 'Content-Type': 'application/json', 'x-funcionario-id': 'FUN-3002' },
                 body: JSON.stringify({ gravedad: incidente.gravedad })
               });
               if (response.ok) {

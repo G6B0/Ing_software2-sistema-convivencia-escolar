@@ -91,7 +91,9 @@ const actualizarGravedadIncidente = async (req, res) => {
       incidente: incidenteActualizado,
     })
   } catch (error) {
-    return responderErrorOperacion(error, res)
+      return res.status(500).json({
+        error: 'Error interno del servidor',
+      })
   }
 }
 

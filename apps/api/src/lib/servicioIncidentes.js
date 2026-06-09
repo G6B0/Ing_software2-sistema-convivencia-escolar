@@ -186,7 +186,19 @@ class ServicioIncidentes {
       gravedadAnterior,
       gravedadNueva: nuevaGravedad,
     })
-
+    
+    if (nuevaGravedad === 'Grave' && gravedadAnterior !== 'Grave') {
+      const director = this.servicioInstitucional.consultarDirector()
+      if (director) {
+        await this.persistenciaSistema.guardarNotificacion({
+          id: crearId('NOT'),
+          titulo: `Incidente actualizado a grave: ${incidenteActualizado.titulo}`,
+          incidenteId: incidenteActualizado.id,
+          fechaCreacion: new Date().toISOString(),
+          destinatarioId: director.id,
+        })
+      }
+    }
     return incidenteActualizado
   }
 
