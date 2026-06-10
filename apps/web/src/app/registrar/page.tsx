@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, useCallback } from 'react';
 import Field from '@/components/Field';
 import Btn from '@/components/Btn';
 import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
+import { useSearchParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -75,6 +76,13 @@ export default function RegistrarPage() {
 
   const [protocolos, setProtocolos] = useState<Record<string, string>>({});
 
+  const searchParams = useSearchParams();
+  const alumnoPreseleccionado = searchParams.get('alumnoId') ? {
+    alumnoId: searchParams.get('alumnoId') || '',
+    alumnoNombre: searchParams.get('alumnoNombre') || '',
+    alumnoCurso: searchParams.get('alumnoCurso') || '',
+  } : null;
+
   useEffect(() => {
     try {
       const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
@@ -96,6 +104,16 @@ export default function RegistrarPage() {
       .then(r => r.json())
       .then(data => { if (data.ok) setCursos(data.data) })
       .catch(() => {});
+
+    if (alumnoPreseleccionado?.alumnoId) {
+      setParticipantes([{
+        alumnoInstitucionalId: alumnoPreseleccionado.alumnoId,
+        nombreAlumno: alumnoPreseleccionado.alumnoNombre,
+        cursoAlumno: alumnoPreseleccionado.alumnoCurso,
+        rolEnIncidente: '',
+        observacion: ''
+      }]);
+    }
   }, []);
 
   useEffect(() => {
@@ -234,6 +252,8 @@ export default function RegistrarPage() {
   const eliminarParticipante = (index: number) => {
     setParticipantes(participantes.filter((_, i) => i !== index));
   };
+  const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
+  const [participanteEditando, setParticipanteEditando] = useState<Participante | null>(null);
 
   const validarFormulario = () => {
     const nuevosErrores: Record<string, string> = {};
@@ -467,44 +487,124 @@ export default function RegistrarPage() {
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {participantes.map((p, index) => (
-                    <div key={index} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 16px',
-                      background: '#f8fafc',
-                      borderRadius: 8,
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>
-                          {p.nombreAlumno}
-                          <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 8, fontSize: 13 }}>
-                            Curso {p.cursoAlumno}
-                          </span>
+                    <div key={index}>
+                      {editandoIndex === index ? (
+                        // Modo edicion
+                        <div style={{ padding: '16px', background: '#f0f9ff', borderRadius: 8, border: '1.5px solid #3b82f6' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>
+                            Editando: {p.nombreAlumno}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                            <Field label="Rol en el incidente" required>
+                              <select
+                                style={fld}
+                                value={participanteEditando?.rolEnIncidente || ''}
+                                onChange={e => setParticipanteEditando(pe => pe ? { ...pe, rolEnIncidente: e.target.value } : pe)}
+                              >
+                                <option value="">-- Seleccionar --</option>
+                                <option>Agresor</option>
+                                <option>Victima</option>
+                                <option>Testigo</option>
+                                <option>Involucrado</option>
+                              </select>
+                            </Field>
+                            <Field label="Observacion (opcional)">
+                              <input
+                                style={fld}
+                                value={participanteEditando?.observacion || ''}
+                                onChange={e => setParticipanteEditando(pe => pe ? { ...pe, observacion: e.target.value } : pe)}
+                                placeholder="Detalles adicionales..."
+                              />
+                            </Field>
+                          </div>
+                          <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <Btn type="button" variant="ghost" onClick={() => {
+                              setEditandoIndex(null);
+                              setParticipanteEditando(null);
+                            }}>
+                              Cancelar
+                            </Btn>
+                            <Btn type="button" variant="secondary" onClick={() => {
+                              if (!participanteEditando?.rolEnIncidente) {
+                                alert('Debe seleccionar un rol');
+                                return;
+                              }
+                              const nuevos = [...participantes];
+                              nuevos[index] = participanteEditando;
+                              setParticipantes(nuevos);
+                              setEditandoIndex(null);
+                              setParticipanteEditando(null);
+                            }}>
+                              Guardar
+                            </Btn>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 13, color: '#64748b' }}>
-                          Rol: <span style={{ fontWeight: 500, color: '#475569' }}>{p.rolEnIncidente}</span>
-                          {p.observacion && ` - ${p.observacion}`}
+                      ) : (
+                        // Modo visualizacion
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          background: '#f8fafc',
+                          borderRadius: 8,
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>
+                              {p.nombreAlumno}
+                              <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 8, fontSize: 13 }}>
+                                {p.alumnoInstitucionalId} - Curso {p.cursoAlumno}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 13, color: '#64748b' }}>
+                              {p.rolEnIncidente
+                                ? <>Rol: <span style={{ fontWeight: 500, color: '#475569' }}>{p.rolEnIncidente}</span>{p.observacion && ` - ${p.observacion}`}</>
+                                : <span style={{ color: '#dc2626', fontWeight: 500 }}>Sin rol asignado</span>
+                              }
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditandoIndex(index);
+                                setParticipanteEditando({ ...p });
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                background: '#dbeafe',
+                                color: '#1e40af',
+                                border: 'none',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                fontFamily: 'inherit'
+                              }}
+                            >
+                              <i className="bi bi-pencil" /> Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => eliminarParticipante(index)}
+                              style={{
+                                padding: '6px 12px',
+                                background: '#fee2e2',
+                                color: '#dc2626',
+                                border: 'none',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                fontFamily: 'inherit'
+                              }}
+                            >
+                              <i className="bi bi-trash" /> Eliminar
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => eliminarParticipante(index)}
-                        style={{
-                          padding: '6px 12px',
-                          background: '#fee2e2',
-                          color: '#dc2626',
-                          border: 'none',
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          fontSize: 13,
-                          fontWeight: 600,
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        <i className="bi bi-trash" /> Eliminar
-                      </button>
+                      )}
                     </div>
                   ))}
                 </div>
