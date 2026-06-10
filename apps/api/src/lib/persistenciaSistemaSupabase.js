@@ -275,19 +275,28 @@ class PersistenciaSistemaSupabase {
   async consultarNotificacionesPorDestinatario(destinatarioId) {
     const { data: notificaciones, error } = await this.supabase
       .from('notificaciones')
-      .select('*')
+      .select(`
+        *,
+        incidentes!incidente_id (
+          estado
+        )
+      `)
       .eq('destinatario_id', destinatarioId)
+      .not('incidentes.estado', 'eq', 'Cerrado')
       .order('fecha_creacion', { ascending: false })
 
     asegurarSinError(error, 'No se pudieron consultar las notificaciones')
-    return notificaciones.map(n => ({
-      id: n.id,
-      titulo: n.titulo,
-      incidenteId: n.incidente_id,
-      fechaCreacion: n.fecha_creacion,
-      leida: n.leida,
-      destinatarioId: n.destinatario_id,
-    }))
+
+    return (notificaciones || [])
+      .filter(n => n.incidentes !== null)
+      .map(n => ({
+        id: n.id,
+        titulo: n.titulo,
+        incidenteId: n.incidente_id,
+        fechaCreacion: n.fecha_creacion,
+        leida: n.leida,
+        destinatarioId: n.destinatario_id,
+      }))
   }
   async marcarNotificacionLeida(notificacionId) {
     const { data: notificacion, error } = await this.supabase
