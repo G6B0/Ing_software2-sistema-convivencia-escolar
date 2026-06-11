@@ -1,4 +1,19 @@
 const { ErrorValidacionSistema } = require('./erroresSistema')
+const { ESTADOS_INCIDENTE } = require('./persistenciaSistema')
+const { crearId } = require('./persistenciaSistema')
+
+function obtenerFechaLocalISO() {
+  const fecha = new Date()
+  const yyyy = fecha.getFullYear()
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dd = String(fecha.getDate()).padStart(2, '0')
+
+  return `${yyyy}-${mm}-${dd}`
+}
+
+function obtenerFechaSolo(fecha) {
+  return String(fecha).split('T')[0]
+}
 
 class ServicioIncidentes {
   constructor({ persistenciaSistema, servicioInstitucional }) {
@@ -7,6 +22,10 @@ class ServicioIncidentes {
   }
 
   async registrarIncidente(datosIncidente) {
+    if (datosIncidente.fecha && obtenerFechaSolo(datosIncidente.fecha) > obtenerFechaLocalISO()) {
+      throw new ErrorValidacionSistema('La fecha del incidente no puede estar en el futuro.')
+    }
+
     const funcionario = this.servicioInstitucional.consultarFuncionario(
       datosIncidente.funcionarioResponsableId
     )
@@ -39,6 +58,20 @@ class ServicioIncidentes {
       entidad: 'incidente',
       identificadorRelacionado: incidente.id,
     })
+    if (datosIncidente.gravedad === 'Grave') {
+      console.log('Generando notificación para incidente grave...')
+      const director = this.servicioInstitucional.consultarDirector()
+      console.log('Director encontrado:', director)
+      if (director) {
+        await this.persistenciaSistema.guardarNotificacion({
+          id: crearId('NOT'),
+          titulo: `Incidente grave: ${incidente.titulo}`,
+          incidenteId: incidente.id,
+          fechaCreacion: new Date().toISOString(),
+          destinatarioId: director.id,
+        })
+      }
+    }
 
     return incidente
   }
@@ -60,6 +93,10 @@ class ServicioIncidentes {
 
     if (!datosSeguimiento.fecha || datosSeguimiento.fecha.trim() === '') {
       throw new ErrorValidacionSistema('La fecha del seguimiento es obligatoria.');
+    }
+
+    if (obtenerFechaSolo(datosSeguimiento.fecha) > obtenerFechaLocalISO()) {
+      throw new ErrorValidacionSistema('La fecha del seguimiento no puede estar en el futuro.');
     }
     // ------------------------------------------
 
@@ -149,6 +186,57 @@ class ServicioIncidentes {
       gravedadAnterior,
       gravedadNueva: nuevaGravedad,
     })
+    
+    if (nuevaGravedad === 'Grave' && gravedadAnterior !== 'Grave') {
+      const director = this.servicioInstitucional.consultarDirector()
+      if (director) {
+        await this.persistenciaSistema.guardarNotificacion({
+          id: crearId('NOT'),
+          titulo: `Incidente actualizado a grave: ${incidenteActualizado.titulo}`,
+          incidenteId: incidenteActualizado.id,
+          fechaCreacion: new Date().toISOString(),
+          destinatarioId: director.id,
+        })
+      }
+    }
+    return incidenteActualizado
+  }
+
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado, funcionarioSesionId) {
+    const funcionario = this.servicioInstitucional.consultarFuncionario(funcionarioSesionId)
+
+    if (!funcionario) {
+      throw new ErrorValidacionSistema('El funcionario responsable no existe.')
+    }
+
+    const incidente = await this.consultarIncidentePorId(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente no existe.')
+    }
+
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    const estadoAnterior = incidente.estado
+
+    if (estadoAnterior === nuevoEstado) {
+      return incidente
+    }
+
+    const incidenteActualizado = await this.persistenciaSistema.actualizarEstadoIncidente(
+      incidenteId,
+      nuevoEstado
+    )
+
+    await this.persistenciaSistema.guardarAuditoria({
+      accion: 'CAMBIO_ESTADO',
+      fecha: new Date().toISOString(),
+      funcionarioResponsableId: funcionario.id,
+      entidad: 'incidente',
+      identificadorRelacionado: incidenteId,
+    })
 
     return incidenteActualizado
   }
@@ -178,16 +266,23 @@ class ServicioIncidentes {
     // 5. Test 1: Ordenar cronológicamente (del más antiguo al más nuevo)
     seguimientos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
 
-    // 6. Enriquecer con nombre del funcionario
-    const seguimientosEnriquecidos = seguimientos.map((seg) => {
-      const func = this.servicioInstitucional.consultarFuncionario(seg.funcionarioResponsableId)
+    return seguimientos.map((seguimiento) => {
+      const funcionario = this.servicioInstitucional.consultarFuncionario(
+        seguimiento.funcionarioResponsableId
+      )
+
       return {
-        ...seg,
-        funcionarioNombre: func ? func.nombre : null,
+        ...seguimiento,
+        funcionarioResponsable: funcionario
+          ? {
+              id: funcionario.id,
+              nombre: funcionario.nombre,
+              rol: funcionario.rol,
+            }
+          : null,
+        funcionarioNombre: funcionario ? funcionario.nombre : null,
       }
     })
-
-    return seguimientosEnriquecidos
   }
 
   async consultarIncidentePorId(incidenteId) {
@@ -236,9 +331,21 @@ class ServicioIncidentes {
         }
       })
 
+      const funcionario = this.servicioInstitucional.consultarFuncionario(
+        incidente.funcionarioResponsableId
+      )
+
       return {
         ...incidente,
         participantes: participantesEnriquecidos,
+        funcionarioResponsable: funcionario
+          ? {
+              id: funcionario.id,
+              nombre: funcionario.nombre,
+              rol: funcionario.rol,
+            }
+          : null,
+        funcionarioNombre: funcionario ? funcionario.nombre : null,
       }
     })
 

@@ -257,6 +257,12 @@
       "rol": "orientador"
     },
     {
+      "id": "FUN-3009",
+      "nombre": "Claudia Riquelme",
+      "correoInstitucional": "claudia.riquelme@colegio.cl",
+      "rol": "director"
+    },
+    {
       "id": "FUN-3008",
       "nombre": "Sebastian Torres",
       "correoInstitucional": "sebastian.torres@colegio.cl",
@@ -265,6 +271,6 @@
   ],"protocolos": {
     "Leve": "Registrar observación y realizar seguimiento preventivo.",
     "Moderado": "Notificar al inspector y contactar al apoderado.",
-    "Grave": "Pal SENAME"
+    "Grave": "Activar protocolo de convivencia escolar, informar a dirección, contactar apoderados y derivar a instituciones especializadas si corresponde."
   }
 }

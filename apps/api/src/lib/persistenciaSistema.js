@@ -9,7 +9,7 @@ const CAMPOS_INCIDENTE_REQUERIDOS = [
   'funcionarioResponsableId',
 ]
 
-const ESTADOS_INCIDENTE = new Set(['Abierto', 'Cerrado', 'Reabierto'])
+const ESTADOS_INCIDENTE = new Set(['Abierto', 'En seguimiento', 'Cerrado'])
 const GRAVEDADES_INCIDENTE = new Set([
   'Leve',
   'Moderado',
@@ -57,6 +57,7 @@ class PersistenciaSistemaMemoria {
     this.incidenteParticipantes = new Map()
     this.seguimientos = new Map()
     this.auditorias = new Map()
+    this.notificaciones = new Map()
   }
 
   async guardarIncidente(datosIncidente) {
@@ -119,6 +120,24 @@ class PersistenciaSistemaMemoria {
 
     incidente.gravedad = nuevaGravedad
     incidente.protocolo = protocolo
+
+    this.incidentes.set(incidenteId, incidente)
+
+    return incidente
+  }
+
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado) {
+    const incidente = this.incidentes.get(incidenteId)
+
+    if (!incidente) {
+      throw new ErrorValidacionSistema('El incidente no existe.')
+    }
+
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    incidente.estado = nuevoEstado
 
     this.incidentes.set(incidenteId, incidente)
 
@@ -210,6 +229,45 @@ class PersistenciaSistemaMemoria {
     return Array.from(this.seguimientos.values()).filter(
       (seguimiento) => seguimiento.incidenteId === incidenteId
     )
+  }
+
+  async guardarNotificacion(datosNotificacion) {
+    validarCamposRequeridos(
+      datosNotificacion,
+      ['titulo', 'incidenteId', 'fechaCreacion', 'destinatarioId'],
+      'Notificacion'
+    )
+
+    const notificacion = {
+      id: datosNotificacion.id || crearId('NOT'),
+      titulo: datosNotificacion.titulo,
+      incidenteId: datosNotificacion.incidenteId,
+      fechaCreacion: datosNotificacion.fechaCreacion,
+      leida: false,
+      destinatarioId: datosNotificacion.destinatarioId,
+    }
+
+    this.notificaciones.set(notificacion.id, notificacion)
+    return notificacion
+  }
+
+  async consultarNotificacionesPorDestinatario(destinatarioId) {
+    return Array.from(this.notificaciones.values()).filter(
+      (notificacion) => notificacion.destinatarioId === destinatarioId
+    )
+  }
+
+  async marcarNotificacionLeida(notificacionId) {
+    const notificacion = this.notificaciones.get(notificacionId)
+
+    if (!notificacion) {
+      return null
+    }
+
+    notificacion.leida = true
+    this.notificaciones.set(notificacionId, notificacion)
+
+    return notificacion
   }
 }
 

@@ -9,6 +9,17 @@ const {
   PersistenciaSistemaMemoria,
 } = require('../src/lib/persistenciaSistema')
 
+function obtenerFechaFuturaISO() {
+  const fecha = new Date()
+  fecha.setDate(fecha.getDate() + 1)
+
+  const yyyy = fecha.getFullYear()
+  const mm = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dd = String(fecha.getDate()).padStart(2, '0')
+
+  return `${yyyy}-${mm}-${dd}`
+}
+
 test('US01: T03 Test 1: registra un incidente correctamente asociado a un alumno valido', async () => {
 
   const persistenciaSistema = new PersistenciaSistemaMemoria()
@@ -176,6 +187,37 @@ test('US01: T05 Test 2: incidente queda disponible para gestion posterior', asyn
   assert.equal(incidentes[0].estado, 'Abierto')
 
   assert.equal(incidentes[0].id, incidente.id)
+})
+
+test('US01: rechaza registrar incidentes con fecha futura', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  await assert.rejects(
+    () =>
+      servicioIncidentes.registrarIncidente({
+        titulo: 'Incidente futuro',
+        fecha: obtenerFechaFuturaISO(),
+        descripcion: 'Fecha invalida para un incidente',
+        gravedad: 'Leve',
+        funcionarioResponsableId: 'FUN-3001',
+        participantes: [
+          {
+            alumnoInstitucionalId: 'ALU-1001',
+            rolEnIncidente: 'Involucrado',
+          },
+        ],
+      }),
+    /La fecha del incidente no puede estar en el futuro/
+  )
+
+  const incidentes = await persistenciaSistema.listarIncidentes()
+
+  assert.equal(incidentes.length, 0)
 })
 test('US01: T06 Test 1: registra auditoria al crear incidente', async () => {
   const persistencia = new PersistenciaSistemaMemoria()
@@ -607,4 +649,67 @@ test('US02: T05 Test 2: no registra auditoria si la gravedad no cambia', async (
   )
 
   assert.equal(cambiosGravedad.length, 0)
+})
+
+test('US02: actualiza el estado de un incidente', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  const actualizado = await servicioIncidentes.actualizarEstadoIncidente(
+    incidente.id,
+    'En seguimiento',
+    'FUN-3001'
+  )
+
+  assert.equal(actualizado.estado, 'En seguimiento')
+
+  const consultado = await servicioIncidentes.consultarIncidentePorId(incidente.id)
+
+  assert.equal(consultado.estado, 'En seguimiento')
+})
+
+test('US02: rechaza un estado de incidente invalido', async () => {
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+
+  const servicioIncidentes = new ServicioIncidentes({
+    persistenciaSistema,
+    servicioInstitucional: new ServicioInstitucional(),
+  })
+
+  const incidente = await servicioIncidentes.registrarIncidente({
+    titulo: 'Conflicto',
+    fecha: '2025-05-20',
+    descripcion: 'Discusion entre alumnos',
+    gravedad: 'Leve',
+    funcionarioResponsableId: 'FUN-3001',
+    participantes: [
+      {
+        alumnoInstitucionalId: 'ALU-1001',
+        rolEnIncidente: 'Agresor',
+      },
+    ],
+  })
+
+  await assert.rejects(
+    () => servicioIncidentes.actualizarEstadoIncidente(incidente.id, 'Reabierto', 'FUN-3001'),
+    ErrorValidacionSistema
+  )
 })

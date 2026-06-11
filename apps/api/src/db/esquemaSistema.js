@@ -10,7 +10,7 @@ const esquemaSistema = {
       estado: {
         tipo: 'string',
         requerido: true,
-        valoresPermitidos: ['Abierto', 'Cerrado', 'Reabierto'],
+        valoresPermitidos: ['Abierto', 'En seguimiento', 'Cerrado'],
       },
       funcionarioResponsableId: {
         tipo: 'string',
@@ -66,6 +66,21 @@ const esquemaSistema = {
       },
       entidad: { tipo: 'string', requerido: true },
       identificadorRelacionado: { tipo: 'string', requerido: true },
+    },
+  },
+  notificaciones: {
+    descripcion: 'Notificaciones generadas para el director al registrar incidentes graves.',
+    campos: {
+      id: { tipo: 'string', requerido: true, unico: true },
+      titulo: { tipo: 'string', requerido: true },
+      incidenteId: { tipo: 'string', requerido: true, referencia: 'incidentes.id' },
+      fechaCreacion: { tipo: 'string', requerido: true },
+      leida: { tipo: 'boolean', requerido: true },
+      destinatarioId: {
+        tipo: 'string',
+        requerido: true,
+        referencia: 'Base de Datos Institucionales.funcionarios.id',
+      },
     },
   },
   protocolos: {

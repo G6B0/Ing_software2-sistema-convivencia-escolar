@@ -83,7 +83,6 @@ class PersistenciaSistemaSupabase {
         fecha: datosIncidente.fecha,
         descripcion: datosIncidente.descripcion,
         gravedad: datosIncidente.gravedad,
-        protocolo: datosIncidente.protocolo,
         estado: 'Abierto',
         funcionario_responsable_id: datosIncidente.funcionarioResponsableId,
         creado_en: creadoEn,
@@ -176,8 +175,8 @@ class PersistenciaSistemaSupabase {
       funcionario_responsable_id: datosAuditoria.funcionarioResponsableId,
       entidad: datosAuditoria.entidad,
       identificador_relacionado: datosAuditoria.identificadorRelacionado,
-     // gravedad_anterior: datosAuditoria.gravedadAnterior || null,
-     // gravedad_nueva: datosAuditoria.gravedadNueva || null,
+      gravedad_anterior: datosAuditoria.gravedadAnterior || null,
+      gravedad_nueva: datosAuditoria.gravedadNueva || null,
     })
       .select('*')
       .single()
@@ -251,6 +250,99 @@ class PersistenciaSistemaSupabase {
     const participantes = await this.consultarParticipantesPorIncidente(incidenteId)
 
     return desdeIncidenteSupabase(incidente, participantes)
+  }
+
+  async actualizarEstadoIncidente(incidenteId, nuevoEstado) {
+    if (!ESTADOS_INCIDENTE.has(nuevoEstado)) {
+      throw new ErrorValidacionSistema('El estado del incidente no es valido.')
+    }
+
+    const { data: incidente, error } = await this.supabase
+      .from('incidentes')
+      .update({
+        estado: nuevoEstado,
+      })
+      .eq('id', incidenteId)
+      .select('*')
+      .single()
+
+    asegurarSinError(error, 'No se pudo actualizar el estado del incidente')
+
+    const participantes = await this.consultarParticipantesPorIncidente(incidenteId)
+
+    return desdeIncidenteSupabase(incidente, participantes)
+  }
+  async consultarNotificacionesPorDestinatario(destinatarioId) {
+    const { data: notificaciones, error } = await this.supabase
+      .from('notificaciones')
+      .select(`
+        *,
+        incidentes!incidente_id (
+          estado
+        )
+      `)
+      .eq('destinatario_id', destinatarioId)
+      .not('incidentes.estado', 'eq', 'Cerrado')
+      .order('fecha_creacion', { ascending: false })
+
+    asegurarSinError(error, 'No se pudieron consultar las notificaciones')
+
+    return (notificaciones || [])
+      .filter(n => n.incidentes !== null)
+      .map(n => ({
+        id: n.id,
+        titulo: n.titulo,
+        incidenteId: n.incidente_id,
+        fechaCreacion: n.fecha_creacion,
+        leida: n.leida,
+        destinatarioId: n.destinatario_id,
+      }))
+  }
+  async marcarNotificacionLeida(notificacionId) {
+    const { data: notificacion, error } = await this.supabase
+      .from('notificaciones')
+      .update({ leida: true })
+      .eq('id', notificacionId)
+      .select('*')
+      .maybeSingle()
+
+    asegurarSinError(error, 'No se pudo marcar la notificación como leída')
+
+    if (!notificacion) return null
+
+    return {
+      id: notificacion.id,
+      titulo: notificacion.titulo,
+      incidenteId: notificacion.incidente_id,
+      fechaCreacion: notificacion.fecha_creacion,
+      leida: notificacion.leida,
+      destinatarioId: notificacion.destinatario_id,
+    }
+  }
+  async guardarNotificacion(datosNotificacion) {
+    const { data: notificacion, error } = await this.supabase
+      .from('notificaciones')
+      .insert({
+        id: datosNotificacion.id,
+        titulo: datosNotificacion.titulo,
+        incidente_id: datosNotificacion.incidenteId,
+        fecha_creacion: datosNotificacion.fechaCreacion,
+        leida: false,
+        destinatario_id: datosNotificacion.destinatarioId,
+      })
+      .select('*')
+      .single()
+
+    asegurarSinError(error, 'No se pudo guardar la notificación')
+
+    return {
+      id: notificacion.id,
+      titulo: notificacion.titulo,
+      incidenteId: notificacion.incidente_id,
+      fechaCreacion: notificacion.fecha_creacion,
+      leida: notificacion.leida,
+      destinatarioId: notificacion.destinatario_id,
+    }
   }
 
 }
