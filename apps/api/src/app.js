@@ -9,6 +9,7 @@ const ServicioAutorizacion = require('./lib/servicioAutorizacion')
 const { PERMISOS } = require('./lib/rolesPermisos')
 const seguimientoRoutes = require('./routes/seguimientoroutes')
 const authRoutes = require('./routes/authRoutes')
+const reportesRoutes = require('./routes/reportesRoutes')
 const rolesPermisosRoutes = require('./routes/rolesPermisosRoutes')
 
 function crearApp({
@@ -33,6 +34,7 @@ function crearApp({
   app.use('/', authRoutes)
   app.use('/', rolesPermisosRoutes)
   app.use('/', seguimientoRoutes)
+  app.use('/', reportesRoutes)
 
   app.get('/institucional/alumnos/:alumnoId', (req, res) => {
     const alumno = servicioInstitucional.consultarAlumnoPorId(req.params.alumnoId)
