@@ -320,7 +320,7 @@ export default function RegistrarPage() {
 
       if (resultado.ok) {
         // =========================================================
-        // MAGIA TAREA 3 (HU-08): Alertas visuales condicionales
+        // TAREA 3 (HU-08): Alertas visuales condicionales
         // =========================================================
         // Buscamos la variable emailSent que configuramos en el backend
         const correoEnviado = resultado.data?.emailSent || resultado.emailSent;
