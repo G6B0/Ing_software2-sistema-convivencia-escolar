@@ -319,16 +319,32 @@ export default function RegistrarPage() {
       const resultado = await response.json();
 
       if (resultado.ok) {
-        setMensaje({
-          tipo: 'success',
-          texto: 'Incidente registrado correctamente'
-        });
+        // =========================================================
+        // MAGIA TAREA 3 (HU-08): Alertas visuales condicionales
+        // =========================================================
+        // Buscamos la variable emailSent que configuramos en el backend
+        const correoEnviado = resultado.data?.emailSent || resultado.emailSent;
+        
+        if (correoEnviado) {
+          alert('✅ Incidente registrado y apoderado notificado exitosamente.');
+          setMensaje({
+            tipo: 'success',
+            texto: 'Incidente registrado y apoderado notificado exitosamente.'
+          });
+        } else {
+          alert('⚠️ Incidente registrado, pero no se pudo notificar al apoderado (Sin correo registrado).');
+          setMensaje({
+            tipo: 'success', 
+            texto: 'Incidente registrado (No se pudo notificar al apoderado).'
+          });
+        }
+        // =========================================================
 
         limpiarFormulario();
       } else {
         setMensaje({
           tipo: 'error',
-          texto: resultado.mensaje
+          texto: resultado.mensaje || 'Error al registrar el incidente'
         });
       }
     } catch {
