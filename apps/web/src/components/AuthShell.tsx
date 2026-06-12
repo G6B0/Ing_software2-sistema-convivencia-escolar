@@ -3,12 +3,14 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import { canAccessPath, getPermissions } from '@/lib/permissions';
 
 export interface FuncionarioSesion {
   id: string;
   nombre: string;
   correoInstitucional: string;
   rol: string;
+  permisos?: string[];
 }
 
 export interface SesionUsuario {
@@ -27,6 +29,9 @@ export default function AuthShell({ children }: AuthShellProps) {
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
   const [validandoSesion, setValidandoSesion] = useState(true);
+  const permisos = sesion
+    ? getPermissions(sesion.funcionario.rol, sesion.funcionario.permisos)
+    : [];
 
   useEffect(() => {
     try {
@@ -51,8 +56,13 @@ export default function AuthShell({ children }: AuthShellProps) {
 
     if (sesion && pathname === '/login') {
       router.replace('/dashboard');
+      return;
     }
-  }, [pathname, router, sesion, validandoSesion]);
+
+    if (sesion && !canAccessPath(pathname, permisos)) {
+      router.replace('/dashboard');
+    }
+  }, [pathname, permisos, router, sesion, validandoSesion]);
 
   const cerrarSesion = () => {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -72,12 +82,17 @@ export default function AuthShell({ children }: AuthShellProps) {
     return null;
   }
 
+  if (!canAccessPath(pathname, permisos)) {
+    return null;
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: "'DM Sans',sans-serif", background: '#f1f5f9', fontSize: 14 }}>
       <Sidebar
         user={{
           name: sesion.funcionario.nombre,
           role: sesion.funcionario.rol,
+          permissions: permisos,
         }}
         onLogout={cerrarSesion}
       />

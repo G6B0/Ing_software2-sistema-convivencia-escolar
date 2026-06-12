@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { hasAnyPermission, NAVIGATION_ITEMS } from '@/lib/permissions';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SESSION_STORAGE_KEY = 'sce_sesion';
 
 interface SidebarProps {
-  user: { name: string; role: string };
+  user: { name: string; role: string; permissions: string[] };
   onLogout?: () => void;
 }
 
@@ -49,14 +50,9 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     setNotificaciones(prev => prev.map(n => n.id === notificacion.id ? { ...n, leida: true } : n));
   };
 
-  const items = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'speedometer2', href: '/dashboard' },
-    { id: 'incidencias', label: 'Incidencias', icon: 'exclamation-triangle', href: '/incidencias' },
-    { id: 'registrar', label: 'Registrar', icon: 'plus-circle', href: '/registrar' },
-    { id: 'seguimiento', label: 'Seguimiento', icon: 'journal-check', href: '/seguimiento' },
-    { id: 'ranking', label: 'Ranking Cursos', icon: 'bar-chart-line', href: '/ranking' },
-    { id: 'mensual', label: 'Reporte Mensual', icon: 'calendar3', href: '/mensual' },
-  ];
+  const items = NAVIGATION_ITEMS.filter(item =>
+    hasAnyPermission(user.permissions, item.permissions)
+  );
 
   const initials = user.name.split(' ').slice(0, 2).map(n => n[0]).join('');
 
