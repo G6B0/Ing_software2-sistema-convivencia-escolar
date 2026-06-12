@@ -16,12 +16,13 @@ function crearApp({
   servicioInstitucional = new ServicioInstitucional(),
   persistenciaSistema = new PersistenciaSistemaMemoria(),
   servicioIncidentes = new ServicioIncidentes({ persistenciaSistema, servicioInstitucional }),
+  servicioAutorizacion = new ServicioAutorizacion({
+    servicioInstitucional,
+  }),
   servicioAutenticacion = new ServicioAutenticacion({
     persistenciaSistema,
     servicioInstitucional,
-  }),
-  servicioAutorizacion = new ServicioAutorizacion({
-    servicioInstitucional,
+    servicioAutorizacion,
   }),
 } = {}) {
   const app = express()

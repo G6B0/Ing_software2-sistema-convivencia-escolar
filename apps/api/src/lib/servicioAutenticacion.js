@@ -1,12 +1,14 @@
 const { randomUUID } = require('node:crypto')
 const { ErrorValidacionSistema } = require('./erroresSistema')
+const { obtenerPermisosPorRol } = require('./rolesPermisos')
 
 const CLAVE_DEMO_FUNCIONARIOS = 'convivencia2026'
 
 class ServicioAutenticacion {
-  constructor({ servicioInstitucional, persistenciaSistema }) {
+  constructor({ servicioInstitucional, persistenciaSistema, servicioAutorizacion }) {
     this.servicioInstitucional = servicioInstitucional
     this.persistenciaSistema = persistenciaSistema
+    this.servicioAutorizacion = servicioAutorizacion
   }
 
   async iniciarSesion({ correoInstitucional, password }) {
@@ -36,6 +38,9 @@ class ServicioAutenticacion {
         nombre: funcionario.nombre,
         correoInstitucional: funcionario.correoInstitucional,
         rol: funcionario.rol,
+        permisos: this.servicioAutorizacion
+          ? this.servicioAutorizacion.obtenerPermisosRol(funcionario.rol)
+          : obtenerPermisosPorRol(funcionario.rol),
       },
     }
   }
