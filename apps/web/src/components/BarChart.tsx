@@ -28,9 +28,7 @@ export default function BarChart({ data, xKey, bars, height = 220 }: BarChartPro
   return (
     <svg
       width="100%"
-      height={height}
       viewBox={`0 0 ${totalW} ${height}`}
-      preserveAspectRatio="none"
       style={{ display: 'block' }}
     >
       {[0, 0.25, 0.5, 0.75, 1].map((p) => (

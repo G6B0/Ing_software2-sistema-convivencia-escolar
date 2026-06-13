@@ -29,9 +29,7 @@ export default function LineChart({ data, xKey, lines, height = 210 }: LineChart
   return (
     <svg
       width="100%"
-      height={height}
       viewBox={`0 0 ${w} ${height}`}
-      preserveAspectRatio="none"
       style={{ display: 'block' }}
     >
       {[0, 0.5, 1].map((p) => (
