@@ -36,20 +36,26 @@ interface DashboardData {
 export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [mensualData, setMensualData] = useState<Array<{ mes: string; total: number; leve: number; moderado: number; grave: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${API_URL}/reportes/dashboard`);
-        const result = await response.json();
+        const [dashRes, mensualRes] = await Promise.all([
+          fetch(`${API_URL}/reportes/dashboard`),
+          fetch(`${API_URL}/reportes/mensual`),
+        ]);
+        const dashResult = await dashRes.json();
+        const mensualResult = await mensualRes.json();
 
-        if (!result.ok) {
-          throw new Error(result.error || 'Error al cargar datos');
+        if (!dashResult.ok) {
+          throw new Error(dashResult.error || 'Error al cargar datos');
         }
 
-        setData(result.data);
+        setData(dashResult.data);
+        if (mensualResult.ok) setMensualData(mensualResult.data);
       } catch (err: any) {
         setError(err.message || 'Error desconocido');
       } finally {
@@ -115,7 +121,7 @@ export default function DashboardPage() {
   const donutData = distribucionGravedad.map(d => ({
     label: d.gravedad,
     value: d.cantidad,
-    color: d.gravedad === 'Leve' ? '#15803d' : d.gravedad === 'Moderado' ? '#92400e' : '#991b1b'
+    color: d.gravedad === 'Leve' ? '#15803d' : d.gravedad === 'Moderado' ? '#e67e22' : '#991b1b'
   }));
 
   const tiposBarData = tiposFrecuentes.map(t => ({ tipo: t.tipo, cantidad: t.cantidad }));
@@ -127,7 +133,7 @@ export default function DashboardPage() {
     grave: c.grave
   }));
 
-  const evolucionData = evolucionMensual.map(e => ({ mes: e.mes, total: e.total }));
+  const evolucionData = mensualData.length > 0 ? mensualData : evolucionMensual.map(e => ({ mes: e.mes, total: e.total, leve: 0, moderado: 0, grave: 0 }));
 
   // Table columns
   const columns: TableColumn[] = [
@@ -205,16 +211,47 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* Line Chart - Monthly Evolution */}
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '20px 24px' }}>
-          <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
-            Evolución mensual
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
+              Evolución de incidencias por mes
+            </h2>
+            <a
+              onClick={() => router.push('/mensual')}
+              style={{ fontSize: 13, color: '#003087', cursor: 'pointer', textDecoration: 'none', fontWeight: 600 }}
+            >
+              Ver Reporte Mensual →
+            </a>
+          </div>
           {evolucionData.length > 0 ? (
-            <LineChart
-              data={evolucionData}
-              xKey="mes"
-              lines={[{ key: 'total', color: '#003087', showLabel: true }]}
-              height={220}
-            />
+            <>
+              <LineChart
+                data={evolucionData}
+                xKey="mes"
+                lines={[
+                  { key: 'total', color: '#003087', showLabel: true },
+                  { key: 'leve', color: '#15803d' },
+                  { key: 'moderado', color: '#e67e22' },
+                  { key: 'grave', color: '#991b1b' },
+                ]}
+                height={220}
+              />
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 12 }}>
+                {[
+                  { label: 'Total', color: '#003087' },
+                  { label: 'Leve', color: '#15803d' },
+                  { label: 'Moderado', color: '#e67e22' },
+                  { label: 'Grave', color: '#991b1b' },
+                ].map(({ label, color }) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <svg width="24" height="12" style={{ display: 'block' }}>
+                      <line x1="0" y1="6" x2="18" y2="6" stroke={color} strokeWidth="2" />
+                      <circle cx="18" cy="6" r="4" fill="#fff" stroke={color} strokeWidth="2" />
+                    </svg>
+                    <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
               Sin datos de evolución
@@ -223,17 +260,19 @@ export default function DashboardPage() {
         </div>
 
         {/* Donut Chart - Severity Distribution */}
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '20px 24px' }}>
+        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '20px 24px', display: 'flex', flexDirection: 'column' }}>
           <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#0f172a' }}>
             Distribución por gravedad
           </h2>
-          {donutData.length > 0 && donutData.some(d => d.value > 0) ? (
-            <DonutChart data={donutData} height={180} />
-          ) : (
-            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
-              Sin datos
-            </div>
-          )}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {donutData.length > 0 && donutData.some(d => d.value > 0) ? (
+              <DonutChart data={donutData} height={180} />
+            ) : (
+              <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+                Sin datos
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

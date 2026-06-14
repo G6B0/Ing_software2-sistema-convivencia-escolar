@@ -11,10 +11,10 @@ interface DonutChartProps {
 
 export default function DonutChart({ data, height = 180 }: DonutChartProps) {
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  const r = 44;
-  const cx = 60;
-  const cy = 60;
-  const sw = 18;
+  const r = 82;
+  const cx = 105;
+  const cy = 105;
+  const sw = 28;
   const circ = 2 * Math.PI * r;
 
   let acc = 0;
@@ -27,7 +27,7 @@ export default function DonutChart({ data, height = 180 }: DonutChartProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <svg width={120} height={120} viewBox="0 0 120 120">
+      <svg width={210} height={210} viewBox="0 0 210 210">
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={sw} />
         {segments.map((d, i) => (
           <circle
@@ -41,10 +41,10 @@ export default function DonutChart({ data, height = 180 }: DonutChartProps) {
             transform={`rotate(-90 ${cx} ${cy})`}
           />
         ))}
-        <text x={cx} y={cy - 4} textAnchor="middle" fontSize={20} fontWeight="800" fill="#0f172a">
+        <text x={cx} y={cy - 4} textAnchor="middle" fontSize={32} fontWeight="800" fill="#0f172a">
           {total}
         </text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fontSize={10} fill="#94a3b8">
+        <text x={cx} y={cy + 18} textAnchor="middle" fontSize={14} fill="#94a3b8">
           total
         </text>
       </svg>
