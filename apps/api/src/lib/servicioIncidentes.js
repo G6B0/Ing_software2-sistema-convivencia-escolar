@@ -58,6 +58,7 @@ class ServicioIncidentes {
       entidad: 'incidente',
       identificadorRelacionado: incidente.id,
     })
+    
     if (datosIncidente.gravedad === 'Grave') {
       console.log('Generando notificación para incidente grave...')
       const director = this.servicioInstitucional.consultarDirector()
@@ -72,6 +73,34 @@ class ServicioIncidentes {
         })
       }
     }
+
+    // =========================================================
+    // TAREA 2 (HU-08): NOTIFICAR AL APODERADO EN LA CREACIÓN
+    // =========================================================
+    incidente.emailSent = false; // Estado por defecto para el Frontend
+    
+    try {
+      if (incidente.participantes && incidente.participantes.length > 0) {
+        // Sacamos el ID del primer alumno involucrado (alumnoInstitucionalId)
+        const primerParticipante = incidente.participantes[0];
+        const idAlumno = primerParticipante.alumnoInstitucionalId || primerParticipante;
+
+        // Inicializamos el cliente de Supabase usando la ruta de tu estructura
+        const { crearClienteSupabase } = require('./supabase');
+        const supabase = crearClienteSupabase();
+
+        // Llamamos a nuestro "Cartero" para que procese la notificación
+        const { notificarApoderado } = require('../services/notificacionService');
+        const resultadoNotificacion = await notificarApoderado(incidente, idAlumno, supabase);
+        
+        // Adjuntamos el resultado del envío al objeto incidente
+        incidente.emailSent = resultadoNotificacion.emailSent;
+      }
+    } catch (notifError) {
+      // CA3: Resiliencia - Si el correo falla, se registra en consola pero NO interrumpe la creación del incidente
+      console.error('⚠️ Error no crítico: Falló la notificación al apoderado.', notifError.message);
+    }
+    // =========================================================
 
     return incidente
   }
