@@ -4,12 +4,17 @@ const test = require('node:test')
 const crearApp = require('../src/app')
 const ServicioAutorizacion = require('../src/lib/servicioAutorizacion')
 const ServicioInstitucional = require('../src/lib/servicioInstitucional')
+const { PersistenciaSistemaMemoria } = require('../src/lib/persistenciaSistema')
 const { PERMISOS } = require('../src/lib/rolesPermisos')
 
 function iniciarAppConAutorizacion() {
   const servicioInstitucional = new ServicioInstitucional()
-  const servicioAutorizacion = new ServicioAutorizacion({ servicioInstitucional })
-  const app = crearApp({ servicioInstitucional, servicioAutorizacion })
+  const persistenciaSistema = new PersistenciaSistemaMemoria()
+  const servicioAutorizacion = new ServicioAutorizacion({
+    servicioInstitucional,
+    persistenciaSistema,
+  })
+  const app = crearApp({ servicioInstitucional, persistenciaSistema, servicioAutorizacion })
   const server = app.listen(0)
 
   return {

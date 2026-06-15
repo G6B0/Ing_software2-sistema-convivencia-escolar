@@ -42,7 +42,21 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     const intervalo = setInterval(cargar, 30000); // refresca cada 30 segundos
     return () => clearInterval(intervalo);
   }, [funcionarioId, user.role]);
+  
+  useEffect(() => {
+    if (!mostrarPanel) return;
 
+    const handleClickFuera = (e: MouseEvent) => {
+      const panel = document.getElementById('panel-notificaciones');
+      if (panel && !panel.contains(e.target as Node)) {
+        setMostrarPanel(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickFuera);
+    return () => document.removeEventListener('mousedown', handleClickFuera);
+  }, [mostrarPanel]);
+  
   const noLeidas = notificaciones.filter(n => !n.leida).length;
 
   const marcarLeida = async (notificacion: any) => {
@@ -106,7 +120,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
               </button>
 
               {mostrarPanel && (
-                <div style={{
+                <div id="panel-notificaciones" style={{
                   position: 'fixed',
                   top: 60,
                   left: 224,

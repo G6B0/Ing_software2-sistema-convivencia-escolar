@@ -50,6 +50,43 @@ async function obtenerDashboard(req, res) {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5)
 
+    // Cursos con más incidencias (top 5)
+    const cursosMap = {}
+    incidentes.forEach((i) => {
+      const cursos = new Set()
+      ;(i.participantes || []).forEach((p) => {
+        if (p.curso) cursos.add(p.curso)
+      })
+      cursos.forEach((curso) => {
+        if (!cursosMap[curso]) {
+          cursosMap[curso] = { curso, total: 0, leve: 0, moderado: 0, grave: 0 }
+        }
+        cursosMap[curso].total += 1
+        if (i.gravedad === 'Leve') cursosMap[curso].leve += 1
+        else if (i.gravedad === 'Moderado') cursosMap[curso].moderado += 1
+        else if (i.gravedad === 'Grave') cursosMap[curso].grave += 1
+      })
+    })
+    const cursosFrecuentes = Object.values(cursosMap)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5)
+
+    // Evolución mensual (últimos 6 meses)
+    const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    const mesMap = {}
+    incidentes.forEach((i) => {
+      const fecha = new Date(i.fecha)
+      const clave = `${fecha.getFullYear()}-${String(fecha.getMonth()).padStart(2, '0')}`
+      if (!mesMap[clave]) {
+        mesMap[clave] = { mes: MESES[fecha.getMonth()], total: 0, _orden: clave }
+      }
+      mesMap[clave].total += 1
+    })
+    const evolucionMensual = Object.values(mesMap)
+      .sort((a, b) => a._orden.localeCompare(b._orden))
+      .slice(-6)
+      .map(({ _orden, ...rest }) => rest)
+
     // Últimas 5 incidencias
     const ultimasIncidencias = [...incidentes]
       .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
@@ -57,7 +94,7 @@ async function obtenerDashboard(req, res) {
 
     return res.json({
       ok: true,
-      data: { kpis, distribucionGravedad, tiposFrecuentes, ultimasIncidencias },
+      data: { kpis, distribucionGravedad, tiposFrecuentes, ultimasIncidencias, cursosFrecuentes, evolucionMensual },
     })
   } catch (error) {
     return res.status(500).json({ ok: false, error: error.message })
