@@ -18,6 +18,7 @@ function crearApp({
   servicioIncidentes = new ServicioIncidentes({ persistenciaSistema, servicioInstitucional }),
   servicioAutorizacion = new ServicioAutorizacion({
     servicioInstitucional,
+    persistenciaSistema,
   }),
   servicioAutenticacion = new ServicioAutenticacion({
     persistenciaSistema,
