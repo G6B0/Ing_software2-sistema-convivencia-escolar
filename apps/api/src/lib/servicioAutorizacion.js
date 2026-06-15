@@ -7,8 +7,9 @@ const {
 } = require('./rolesPermisos')
 
 class ServicioAutorizacion {
-  constructor({ servicioInstitucional }) {
+  constructor({ servicioInstitucional, persistenciaSistema }) {
     this.servicioInstitucional = servicioInstitucional
+    this.persistenciaSistema = persistenciaSistema
     this.permisosPorRol = new Map(
       Object.entries(MATRIZ_ROLES_PERMISOS).map(([rol, permisos]) => [rol, [...permisos]])
     )
@@ -49,11 +50,27 @@ class ServicioAutorizacion {
     }
   }
 
-  actualizarPermisosRol(funcionarioId, rol, permisos) {
+  async actualizarPermisosRol(funcionarioId, rol, permisos) {
     this.verificarPermisoFuncionario(funcionarioId, PERMISOS.GESTIONAR_ROLES_PERMISOS)
 
     const rolNormalizado = this.validarRolExistente(rol)
     const permisosValidados = this.validarPermisos(permisos)
+    const permisosAnteriores = this.obtenerPermisosRol(rolNormalizado)
+
+    if (!this.persistenciaSistema) {
+      throw new Error('No existe una persistencia configurada para registrar la auditoria.')
+    }
+
+    await this.persistenciaSistema.guardarAuditoria({
+      accion: 'MODIFICAR_PERMISOS_ROL',
+      fecha: new Date().toISOString(),
+      funcionarioResponsableId: funcionarioId,
+      entidad: 'rol',
+      identificadorRelacionado: rolNormalizado,
+      rolAfectado: rolNormalizado,
+      permisosAnteriores,
+      permisosNuevos: [...permisosValidados],
+    })
 
     this.permisosPorRol.set(rolNormalizado, permisosValidados)
 

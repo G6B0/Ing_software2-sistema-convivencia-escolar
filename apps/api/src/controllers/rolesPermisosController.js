@@ -26,9 +26,9 @@ function consultarPermisosRol(req, res) {
   }
 }
 
-function actualizarPermisosRol(req, res) {
+async function actualizarPermisosRol(req, res) {
   try {
-    const resultado = req.app.locals.servicioAutorizacion.actualizarPermisosRol(
+    const resultado = await req.app.locals.servicioAutorizacion.actualizarPermisosRol(
       req.header('x-funcionario-id'),
       req.params.rol,
       req.body.permisos

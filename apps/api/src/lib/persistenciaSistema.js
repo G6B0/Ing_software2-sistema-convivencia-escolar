@@ -201,6 +201,12 @@ class PersistenciaSistemaMemoria {
     )
   }
 
+  async consultarAuditoriasPorRol(rol) {
+    return Array.from(this.auditorias.values()).filter(
+      (auditoria) => auditoria.entidad === 'rol' && auditoria.identificadorRelacionado === rol
+    )
+  }
+
   async guardarSeguimiento(datosSeguimiento) {
     validarCamposRequeridos(
       datosSeguimiento,
