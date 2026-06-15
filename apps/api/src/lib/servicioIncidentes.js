@@ -75,7 +75,7 @@ class ServicioIncidentes {
     }
 
     // =========================================================
-    // MAGIA TAREA 2 (HU-08): NOTIFICAR AL APODERADO EN LA CREACIÓN
+    // TAREA 2 (HU-08): NOTIFICAR AL APODERADO EN LA CREACIÓN
     // =========================================================
     incidente.emailSent = false; // Estado por defecto para el Frontend
     
