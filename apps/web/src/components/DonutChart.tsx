@@ -20,7 +20,7 @@ export default function DonutChart({ data, height = 180 }: DonutChartProps) {
   let acc = 0;
   const segments = data.map((d) => {
     const dashLen = (d.value / total) * circ;
-    const offset = circ - (acc / total) * circ;
+    const offset = dashLen + circ - (acc / total) * circ;
     acc += d.value;
     return { ...d, dashLen, offset };
   });
