@@ -67,7 +67,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickFuera);
   }, [mostrarPanel]);
   
-  const noLeidas = notificaciones.filter(n => !n.leida).length;
+  const noLeidas = (notificaciones || []).filter(n => !n.leida).length;
 
   const marcarLeida = async (notificacion: any) => {
     await fetch(`${API_URL}/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
