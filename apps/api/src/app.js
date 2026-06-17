@@ -141,14 +141,15 @@ function crearApp({
       if (!destinatarioId) {
         return res.status(400).json({ ok: false, mensaje: 'Falta el header x-funcionario-id' })
       }
-      const notificaciones = await persistenciaSistema.consultarNotificacionesPorDestinatario(destinatarioId)
-      return res.json({ ok: true, data: notificaciones })
+      const limit = parseInt(req.query.limit) || 5
+      const offset = parseInt(req.query.offset) || 0
+      const { notificaciones, total } = await persistenciaSistema.consultarNotificacionesPorDestinatario(destinatarioId, limit, offset)
+      return res.json({ ok: true, data: notificaciones, total })
     } catch (error) {
       console.error(error)
       return res.status(500).json({ ok: false, mensaje: 'No se pudieron obtener las notificaciones.' })
     }
   })
-
   app.patch('/notificaciones/:notificacionId/leida', async (req, res) => {
     try {
       const notificacion = await persistenciaSistema.marcarNotificacionLeida(req.params.notificacionId)

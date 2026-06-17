@@ -17,7 +17,8 @@ interface LineChartProps {
 
 export default function LineChart({ data, xKey, lines, height = 210 }: LineChartProps) {
   const allVals = lines.flatMap((l) => data.map((d) => Number(d[l.key]) || 0));
-  const maxVal = Math.max(...allVals) * 1.18 || 1;
+  const maxRaw = allVals.length > 0 ? Math.max(...allVals) : 0;
+  const maxVal = isFinite(maxRaw) && maxRaw > 0 ? maxRaw * 1.18 : 1;
   const padL = 36;
   const padB = 28;
   const padT = 18;
@@ -45,13 +46,20 @@ export default function LineChart({ data, xKey, lines, height = 210 }: LineChart
         </g>
       ))}
       {lines.map((l) => {
+
         const pts = data.map((d, i) => ({
           x: padL + (data.length > 1 ? (i / (data.length - 1)) * chartW : chartW / 2),
           y: padT + chartH - ((Number(d[l.key]) || 0) / maxVal) * chartH,
           val: Number(d[l.key]) || 0,
         }));
+
+        if (pts.length === 0) return null; // ← agrega esto
+
         const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-        const areaPath = `${path} L${pts[pts.length - 1].x},${padT + chartH} L${pts[0].x},${padT + chartH} Z`;
+        const areaPath = pts.length > 0
+          ? `${path} L${pts[pts.length - 1].x},${padT + chartH} L${pts[0].x},${padT + chartH} Z`
+          : '';
+
         return (
           <g key={l.key}>
             {l.showLabel && <path d={areaPath} fill={l.color} opacity={0.08} />}
