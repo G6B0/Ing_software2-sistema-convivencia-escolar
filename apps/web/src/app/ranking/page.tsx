@@ -29,18 +29,25 @@ export default function RankingPage() {
 
         // Agrupar por curso
         const mapa: Record<string, FilaCurso> = {};
+        // Ahora: solo cuenta el participante agresor
         for (const inc of incidentes) {
-          for (const p of inc.participantes || []) {
-            const curso = p.cursoAlumno || p.curso || 'Sin curso';
-            if (!mapa[curso]) {
-              mapa[curso] = { curso, total: 0, leves: 0, moderados: 0, graves: 0 };
-            }
-            mapa[curso].total += 1;
-            const g = inc.gravedad?.toLowerCase();
-            if (g === 'leve') mapa[curso].leves += 1;
-            else if (g === 'moderado' || g === 'media') mapa[curso].moderados += 1;
-            else if (g === 'grave' || g === 'alta') mapa[curso].graves += 1;
+          const agresor = (inc.participantes || []).find(
+            (p: any) => p.rolEnIncidente === 'Agresor'
+          );
+
+          // Si no hay agresor usa el primer participante como fallback
+          const participante = agresor || (inc.participantes || [])[0];
+          if (!participante) continue;
+
+          const curso = participante.cursoAlumno || participante.curso || 'Sin curso';
+          if (!mapa[curso]) {
+            mapa[curso] = { curso, total: 0, leves: 0, moderados: 0, graves: 0 };
           }
+          mapa[curso].total += 1;
+          const g = inc.gravedad?.toLowerCase();
+          if (g === 'leve') mapa[curso].leves += 1;
+          else if (g === 'moderado' || g === 'media') mapa[curso].moderados += 1;
+          else if (g === 'grave' || g === 'alta') mapa[curso].graves += 1;
         }
 
         // Ordenar de mayor a menor por total (T5.4)
