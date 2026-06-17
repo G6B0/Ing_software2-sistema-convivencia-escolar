@@ -2,28 +2,86 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { hasAnyPermission, NAVIGATION_ITEMS } from '@/lib/permissions';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const SESSION_STORAGE_KEY = 'sce_sesion';
 
 interface SidebarProps {
-  user: { name: string; role: string };
+  user: { name: string; role: string; permissions: string[] };
   onLogout?: () => void;
 }
 
 export default function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname();
+  const [notificaciones, setNotificaciones] = useState<any[]>([]);
+  const [mostrarPanel, setMostrarPanel] = useState(false);
+  const [funcionarioId, setFuncionarioId] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [hayMas, setHayMas] = useState(false);
+  const [total, setTotal] = useState(0);
 
-  const items = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'speedometer2', href: '/dashboard' },
-    { id: 'incidencias', label: 'Incidencias', icon: 'exclamation-triangle', href: '/incidencias' },
-    { id: 'registrar', label: 'Registrar', icon: 'plus-circle', href: '/registrar' },
-    { id: 'seguimiento', label: 'Seguimiento', icon: 'journal-check', href: '/seguimiento' },
-    { id: 'ranking', label: 'Ranking Cursos', icon: 'bar-chart-line', href: '/ranking' },
-    { id: 'mensual', label: 'Reporte Mensual', icon: 'calendar3', href: '/mensual' },
-  ];
+  useEffect(() => {
+    try {
+      const sesion = JSON.parse(window.localStorage.getItem(SESSION_STORAGE_KEY) || '{}');
+      setFuncionarioId(sesion.funcionario?.id || '');
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (user.role !== 'director' || !funcionarioId) return;
+
+    const cargar = () => {
+      fetch(`${API_URL}/notificaciones?limit=5&offset=0`, {
+        headers: { 'x-funcionario-id': funcionarioId }
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            setNotificaciones(data.data);
+            setTotal(data.total);
+            setHayMas(5 < data.total);
+            setOffset(0);
+          }
+        })
+        .catch(() => {});
+    };
+
+    cargar();
+    const intervalo = setInterval(cargar, 10000);
+    return () => clearInterval(intervalo);
+  }, [funcionarioId, user.role]);
+  
+  useEffect(() => {
+    if (!mostrarPanel) return;
+
+    const handleClickFuera = (e: MouseEvent) => {
+      const panel = document.getElementById('panel-notificaciones');
+      if (panel && !panel.contains(e.target as Node)) {
+        setMostrarPanel(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickFuera);
+    return () => document.removeEventListener('mousedown', handleClickFuera);
+  }, [mostrarPanel]);
+  
+  const noLeidas = notificaciones.filter(n => !n.leida).length;
+
+  const marcarLeida = async (notificacion: any) => {
+    await fetch(`${API_URL}/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
+    setNotificaciones(prev => prev.map(n => n.id === notificacion.id ? { ...n, leida: true } : n));
+  };
+
+  const items = NAVIGATION_ITEMS.filter(item =>
+    hasAnyPermission(user.permissions, item.permissions)
+  );
 
   const initials = user.name.split(' ').slice(0, 2).map(n => n[0]).join('');
 
   return (
-    <div style={{ width: 224, background: '#001f5b', display: 'flex', flexDirection: 'column', color: '#fff', flexShrink: 0, minHeight: '100vh' }}>
+    <div style={{ width: 224, background: '#001f5b', display: 'flex', flexDirection: 'column', color: '#fff', flexShrink: 0, minHeight: '100vh', position: 'relative' }}>
       <div style={{ padding: '22px 18px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -42,7 +100,132 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
           <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
           <div style={{ fontSize: 11, color: '#93c5fd' }}>{user.role}</div>
         </div>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {user.role === 'director' && (
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setMostrarPanel(!mostrarPanel)}
+                style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
+              >
+                <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />
+                {noLeidas > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    background: '#ef4444',
+                    color: '#fff',
+                    borderRadius: '50%',
+                    width: 16,
+                    height: 16,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {noLeidas}
+                  </span>
+                )}
+              </button>
+
+              {mostrarPanel && (
+                <div id="panel-notificaciones" style={{
+                  position: 'fixed',
+                  top: 60,
+                  left: 224,
+                  width: 320,
+                  background: '#fff',
+                  borderRadius: 12,
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  zIndex: 1000,
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Notificaciones</span>
+                    {noLeidas > 0 && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#ef4444' }}>{noLeidas} sin leer</span>
+                    )}
+                  </div>
+                  <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                    {notificaciones.length === 0 ? (
+                      <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>
+                        <i className="bi bi-bell-slash" style={{ fontSize: 28 }} />
+                        <p style={{ marginTop: 8, fontSize: 14 }}>No hay notificaciones</p>
+                      </div>
+                    ) : (
+                        <>
+                          {notificaciones.map(n => (
+                            <Link
+                              key={n.id}
+                              href={`/seguimiento/${n.incidenteId}`}
+                              onClick={() => { marcarLeida(n); setMostrarPanel(false); }}
+                              style={{
+                                display: 'block',
+                                padding: '14px 20px',
+                                borderBottom: '1px solid #f1f5f9',
+                                background: n.leida ? '#fff' : '#eff6ff',
+                                textDecoration: 'none',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: 14, marginTop: 2, flexShrink: 0 }} />
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: n.leida ? 400 : 600, color: '#0f172a' }}>{n.titulo}</div>
+                                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                                    {new Date(n.fechaCreacion).toLocaleDateString('es-CL')}
+                                  </div>
+                                </div>
+                                {!n.leida && (
+                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', marginLeft: 'auto', flexShrink: 0, marginTop: 4 }} />
+                                )}
+                              </div>
+                            </Link>
+                          ))}
+                          {hayMas && (
+                            <button
+                              onClick={() => {
+                                const nuevoOffset = offset + 5;
+                                fetch(`${API_URL}/notificaciones?limit=5&offset=${nuevoOffset}`, {
+                                  headers: { 'x-funcionario-id': funcionarioId }
+                                })
+                                  .then(r => r.json())
+                                  .then(data => {
+                                    if (data.ok) {
+                                      setNotificaciones(prev => [...prev, ...data.data]);
+                                      setOffset(nuevoOffset);
+                                      setHayMas(nuevoOffset + 5 < data.total);
+                                    }
+                                  })
+                                  .catch(() => {});
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: 'transparent',
+                                border: 'none',
+                                borderTop: '1px solid #f1f5f9',
+                                color: '#3b82f6',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                fontFamily: 'inherit'
+                              }}
+                            >
+                              Ver más
+                            </button>
+                          )}
+                        </>
+                      )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />
+        </div>
       </div>
 
       <nav style={{ flex: 1, padding: '10px' }}>
@@ -77,6 +260,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
           );
         })}
       </nav>
+
       {onLogout && (
         <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <button

@@ -57,6 +57,7 @@ class PersistenciaSistemaMemoria {
     this.incidenteParticipantes = new Map()
     this.seguimientos = new Map()
     this.auditorias = new Map()
+    this.notificaciones = new Map()
   }
 
   async guardarIncidente(datosIncidente) {
@@ -200,6 +201,12 @@ class PersistenciaSistemaMemoria {
     )
   }
 
+  async consultarAuditoriasPorRol(rol) {
+    return Array.from(this.auditorias.values()).filter(
+      (auditoria) => auditoria.entidad === 'rol' && auditoria.identificadorRelacionado === rol
+    )
+  }
+
   async guardarSeguimiento(datosSeguimiento) {
     validarCamposRequeridos(
       datosSeguimiento,
@@ -228,6 +235,45 @@ class PersistenciaSistemaMemoria {
     return Array.from(this.seguimientos.values()).filter(
       (seguimiento) => seguimiento.incidenteId === incidenteId
     )
+  }
+
+  async guardarNotificacion(datosNotificacion) {
+    validarCamposRequeridos(
+      datosNotificacion,
+      ['titulo', 'incidenteId', 'fechaCreacion', 'destinatarioId'],
+      'Notificacion'
+    )
+
+    const notificacion = {
+      id: datosNotificacion.id || crearId('NOT'),
+      titulo: datosNotificacion.titulo,
+      incidenteId: datosNotificacion.incidenteId,
+      fechaCreacion: datosNotificacion.fechaCreacion,
+      leida: false,
+      destinatarioId: datosNotificacion.destinatarioId,
+    }
+
+    this.notificaciones.set(notificacion.id, notificacion)
+    return notificacion
+  }
+
+  async consultarNotificacionesPorDestinatario(destinatarioId) {
+    return Array.from(this.notificaciones.values()).filter(
+      (notificacion) => notificacion.destinatarioId === destinatarioId
+    )
+  }
+
+  async marcarNotificacionLeida(notificacionId) {
+    const notificacion = this.notificaciones.get(notificacionId)
+
+    if (!notificacion) {
+      return null
+    }
+
+    notificacion.leida = true
+    this.notificaciones.set(notificacionId, notificacion)
+
+    return notificacion
   }
 }
 

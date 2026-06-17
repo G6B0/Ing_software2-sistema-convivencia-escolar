@@ -144,7 +144,7 @@ export default function AlumnoPerfilPage() {
             </div>
           </div>
         </div>
-        <Btn variant="primary" onClick={() => router.push('/registrar')}>
+        <Btn variant="primary" onClick={() => router.push(`/registrar?alumnoId=${params.id}&alumnoNombre=${encodeURIComponent(nombreAlumno)}&alumnoCurso=${encodeURIComponent(curso)}`)}>
           <i className="bi bi-plus-circle" /> Nuevo incidente
         </Btn>
       </div>

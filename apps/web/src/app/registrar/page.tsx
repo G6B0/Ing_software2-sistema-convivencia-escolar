@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, FormEvent } from 'react';
 import Field from '@/components/Field';
 import Btn from '@/components/Btn';
 import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
+import { useSearchParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -74,6 +75,18 @@ export default function RegistrarPage() {
   const autocompleteRef = useRef<HTMLDivElement>(null);
 
   const [protocolos, setProtocolos] = useState<Record<string, string>>({});
+  const [editandoIndex, setEditandoIndex] = useState<number | null>(null);
+  const [participanteEditando, setParticipanteEditando] = useState<Participante | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [mensaje, setMensaje] = useState<Mensaje | null>(null);
+  const [errores, setErrores] = useState<Record<string, string>>({});
+
+  const searchParams = useSearchParams();
+  const alumnoPreseleccionado = searchParams.get('alumnoId') ? {
+    alumnoId: searchParams.get('alumnoId') || '',
+    alumnoNombre: searchParams.get('alumnoNombre') || '',
+    alumnoCurso: searchParams.get('alumnoCurso') || '',
+  } : null;
 
   useEffect(() => {
     try {
@@ -96,6 +109,16 @@ export default function RegistrarPage() {
       .then(r => r.json())
       .then(data => { if (data.ok) setCursos(data.data) })
       .catch(() => {});
+
+    if (alumnoPreseleccionado?.alumnoId) {
+      setParticipantes([{
+        alumnoInstitucionalId: alumnoPreseleccionado.alumnoId,
+        nombreAlumno: alumnoPreseleccionado.alumnoNombre,
+        cursoAlumno: alumnoPreseleccionado.alumnoCurso,
+        rolEnIncidente: '',
+        observacion: ''
+      }]);
+    }
   }, []);
 
   useEffect(() => {
@@ -110,9 +133,7 @@ export default function RegistrarPage() {
 
     fetch(`${API_URL}/institucional/cursos/${nuevoParticipante.curso}/alumnos`)
       .then(r => r.json())
-      .then(data => {
-        if (data.ok) setAlumnosCurso(data.data);
-      })
+      .then(data => { if (data.ok) setAlumnosCurso(data.data) })
       .catch(() => {})
       .finally(() => setLoadingAlumnos(false));
   }, [nuevoParticipante.curso]);
@@ -132,21 +153,37 @@ export default function RegistrarPage() {
     a.id.toLowerCase().includes(busquedaAlumno.toLowerCase())
   );
 
-  const [loading, setLoading] = useState(false);
-  const [mensaje, setMensaje] = useState<Mensaje | null>(null);
-  const [errores, setErrores] = useState<Record<string, string>>({});
-
   const set = (k: keyof FormData, v: string) =>
     setForm(f => ({ ...f, [k]: v }));
 
   const seleccionarAlumno = (alumno: Alumno) => {
-    setNuevoParticipante(p => ({
-      ...p,
-      alumnoId: alumno.id,
-      alumnoNombre: alumno.nombre
-    }));
+    setNuevoParticipante(p => ({ ...p, alumnoId: alumno.id, alumnoNombre: alumno.nombre }));
     setBusquedaAlumno(alumno.nombre);
     setMostrarSugerencias(false);
+  };
+
+  const validarRolesConflictivos = (
+    alumnoId: string,
+    rol: string,
+    listaParticipantes: Participante[],
+    excludeIndex?: number
+  ): string | null => {
+    const rolesConflictivos: Record<string, string> = {
+      'Agresor': 'Victima',
+      'Victima': 'Agresor'
+    };
+    const rolConflictivo = rolesConflictivos[rol];
+    if (!rolConflictivo) return null;
+
+    const conflicto = listaParticipantes.some((p, i) =>
+      i !== excludeIndex &&
+      p.alumnoInstitucionalId === alumnoId &&
+      p.rolEnIncidente === rolConflictivo
+    );
+
+    return conflicto
+      ? `Este alumno ya esta registrado como ${rolConflictivo}. No puede ser ${rol} al mismo tiempo.`
+      : null;
   };
 
   const agregarParticipante = () => {
@@ -154,18 +191,15 @@ export default function RegistrarPage() {
       alert('Debe seleccionar un curso');
       return;
     }
-
     if (!nuevoParticipante.alumnoId) {
       alert('Debe seleccionar un alumno');
       return;
     }
-
     if (!nuevoParticipante.rol) {
       alert('Debe seleccionar el rol');
       return;
     }
 
-    // Validar que el mismo alumno no este ya agregado
     const yaAgregado = participantes.some(
       p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId
     );
@@ -174,38 +208,13 @@ export default function RegistrarPage() {
       return;
     }
 
-    // Validar que no exista un agresor y victima siendo el mismo alumno
-    const rolesConflictivos: Record<string, string> = {
-      'Agresor': 'Victima',
-      'Victima': 'Agresor'
-    };
-
-    const rolConflictivo = rolesConflictivos[nuevoParticipante.rol];
-    if (rolConflictivo) {
-      const conflicto = participantes.some(
-        p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId && p.rolEnIncidente === rolConflictivo
-      );
-      if (conflicto) {
-        alert(`Este alumno ya fue registrado como ${rolConflictivo}. Un mismo alumno no puede ser ${nuevoParticipante.rol} y ${rolConflictivo} al mismo tiempo.`);
-        return;
-      }
-    }
-
-    // Validar que no haya dos agresores con el mismo alumno en roles opuestos
-    const alumnoYaEsAgresor = participantes.some(
-      p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId && p.rolEnIncidente === 'Agresor'
+    const errorConflicto = validarRolesConflictivos(
+      nuevoParticipante.alumnoId,
+      nuevoParticipante.rol,
+      participantes
     );
-    const alumnoYaEsVictima = participantes.some(
-      p => p.alumnoInstitucionalId === nuevoParticipante.alumnoId && p.rolEnIncidente === 'Victima'
-    );
-
-    if (nuevoParticipante.rol === 'Victima' && alumnoYaEsAgresor) {
-      alert('Este alumno ya esta registrado como Agresor. No puede ser Victima al mismo tiempo.');
-      return;
-    }
-
-    if (nuevoParticipante.rol === 'Agresor' && alumnoYaEsVictima) {
-      alert('Este alumno ya esta registrado como Victima. No puede ser Agresor al mismo tiempo.');
+    if (errorConflicto) {
+      alert(errorConflicto);
       return;
     }
 
@@ -220,15 +229,33 @@ export default function RegistrarPage() {
       }
     ]);
 
-    setNuevoParticipante({
-      curso: '',
-      alumnoId: '',
-      alumnoNombre: '',
-      rol: '',
-      observacion: ''
-    });
+    setNuevoParticipante({ curso: '', alumnoId: '', alumnoNombre: '', rol: '', observacion: '' });
     setBusquedaAlumno('');
     setAlumnosCurso([]);
+  };
+
+  const guardarEdicion = (index: number) => {
+    if (!participanteEditando?.rolEnIncidente) {
+      alert('Debe seleccionar un rol');
+      return;
+    }
+
+    const errorConflicto = validarRolesConflictivos(
+      participanteEditando.alumnoInstitucionalId,
+      participanteEditando.rolEnIncidente,
+      participantes,
+      index
+    );
+    if (errorConflicto) {
+      alert(errorConflicto);
+      return;
+    }
+
+    const nuevos = [...participantes];
+    nuevos[index] = participanteEditando;
+    setParticipantes(nuevos);
+    setEditandoIndex(null);
+    setParticipanteEditando(null);
   };
 
   const eliminarParticipante = (index: number) => {
@@ -245,27 +272,26 @@ export default function RegistrarPage() {
     if (!form.funcionarioId.trim()) nuevosErrores.funcionarioId = 'Campo requerido';
     if (participantes.length === 0) nuevosErrores.participantes = 'Debe agregar participantes';
 
+    const sinRol = participantes.some(p => !p.rolEnIncidente);
+    if (sinRol) nuevosErrores.participantes = 'Todos los participantes deben tener un rol asignado';
+
+    const ids = participantes.map(p => p.alumnoInstitucionalId);
+    for (const id of ids) {
+      const roles = participantes.filter(p => p.alumnoInstitucionalId === id).map(p => p.rolEnIncidente);
+      if (roles.includes('Agresor') && roles.includes('Victima')) {
+        nuevosErrores.participantes = 'Un mismo alumno no puede ser Agresor y Victima al mismo tiempo';
+        break;
+      }
+    }
+
     setErrores(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
   };
 
   const limpiarFormulario = () => {
-    setForm({
-      titulo: '',
-      fecha: '',
-      descripcion: '',
-      gravedad: '',
-      funcionarioId: funcionarioSesion?.id || ''
-    });
-
+    setForm({ titulo: '', fecha: '', descripcion: '', gravedad: '', funcionarioId: funcionarioSesion?.id || '' });
     setParticipantes([]);
-    setNuevoParticipante({
-      curso: '',
-      alumnoId: '',
-      alumnoNombre: '',
-      rol: '',
-      observacion: ''
-    });
+    setNuevoParticipante({ curso: '', alumnoId: '', alumnoNombre: '', rol: '', observacion: '' });
     setBusquedaAlumno('');
     setAlumnosCurso([]);
     setErrores({});
@@ -273,9 +299,7 @@ export default function RegistrarPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
     if (!validarFormulario()) return;
-
     setLoading(true);
 
     try {
@@ -299,23 +323,19 @@ export default function RegistrarPage() {
       const resultado = await response.json();
 
       if (resultado.ok) {
+        const correoEnviado = resultado.data?.emailSent || resultado.emailSent;
         setMensaje({
           tipo: 'success',
-          texto: 'Incidente registrado correctamente'
+          texto: correoEnviado
+            ? 'Incidente registrado y apoderado notificado exitosamente.'
+            : 'Incidente registrado (No se pudo notificar al apoderado).'
         });
-
         limpiarFormulario();
       } else {
-        setMensaje({
-          tipo: 'error',
-          texto: resultado.mensaje
-        });
+        setMensaje({ tipo: 'error', texto: resultado.mensaje || 'Error al registrar el incidente' });
       }
     } catch {
-      setMensaje({
-        tipo: 'error',
-        texto: 'Error de conexion'
-      });
+      setMensaje({ tipo: 'error', texto: 'Error de conexion' });
     } finally {
       setLoading(false);
     }
@@ -337,19 +357,17 @@ export default function RegistrarPage() {
       <p style={{ margin: '0 0 24px', fontSize: 14, color: '#64748b' }}>Complete los campos para registrar un nuevo incidente</p>
 
       {mensaje && (
-        <div
-          style={{
-            marginBottom: 24,
-            padding: '16px 20px',
-            borderRadius: 10,
-            border: '1px solid',
-            background: mensaje.tipo === 'success' ? '#dcfce7' : '#fee2e2',
-            borderColor: mensaje.tipo === 'success' ? '#16a34a' : '#dc2626',
-            color: mensaje.tipo === 'success' ? '#15803d' : '#991b1b',
-            fontSize: 14,
-            fontWeight: 500,
-          }}
-        >
+        <div style={{
+          marginBottom: 24,
+          padding: '16px 20px',
+          borderRadius: 10,
+          border: '1px solid',
+          background: mensaje.tipo === 'success' ? '#dcfce7' : '#fee2e2',
+          borderColor: mensaje.tipo === 'success' ? '#16a34a' : '#dc2626',
+          color: mensaje.tipo === 'success' ? '#15803d' : '#991b1b',
+          fontSize: 14,
+          fontWeight: 500,
+        }}>
           {mensaje.texto}
         </div>
       )}
@@ -445,6 +463,7 @@ export default function RegistrarPage() {
                 );
               })()}
             </Field>
+
             <Field label="Funcionario responsable" required>
               <input
                 style={{ ...fld, borderColor: errores.funcionarioId ? '#dc2626' : '#e2e8f0', background: '#f1f5f9' }}
@@ -462,49 +481,96 @@ export default function RegistrarPage() {
               Participantes del incidente <span style={{ color: '#dc2626' }}>*</span>
             </h3>
 
-            {/* Lista de participantes agregados */}
             {participantes.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {participantes.map((p, index) => (
-                    <div key={index} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '12px 16px',
-                      background: '#f8fafc',
-                      borderRadius: 8,
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>
-                          {p.nombreAlumno}
-                          <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 8, fontSize: 13 }}>
-                            Curso {p.cursoAlumno}
-                          </span>
+                    <div key={index}>
+                      {editandoIndex === index ? (
+                        <div style={{ padding: '16px', background: '#f0f9ff', borderRadius: 8, border: '1.5px solid #3b82f6' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 12 }}>
+                            Editando: {p.nombreAlumno}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                            <Field label="Rol en el incidente" required>
+                              <select
+                                style={fld}
+                                value={participanteEditando?.rolEnIncidente || ''}
+                                onChange={e => setParticipanteEditando(pe => pe ? { ...pe, rolEnIncidente: e.target.value } : pe)}
+                              >
+                                <option value="">-- Seleccionar --</option>
+                                <option>Agresor</option>
+                                <option>Victima</option>
+                                <option>Testigo</option>
+                                <option>Involucrado</option>
+                              </select>
+                            </Field>
+                            <Field label="Observacion (opcional)">
+                              <input
+                                style={fld}
+                                value={participanteEditando?.observacion || ''}
+                                onChange={e => setParticipanteEditando(pe => pe ? { ...pe, observacion: e.target.value } : pe)}
+                                placeholder="Detalles adicionales..."
+                              />
+                            </Field>
+                          </div>
+                          <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <Btn type="button" variant="ghost" onClick={() => {
+                              setEditandoIndex(null);
+                              setParticipanteEditando(null);
+                            }}>
+                              Cancelar
+                            </Btn>
+                            <Btn type="button" variant="secondary" onClick={() => guardarEdicion(index)}>
+                              Guardar
+                            </Btn>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 13, color: '#64748b' }}>
-                          Rol: <span style={{ fontWeight: 500, color: '#475569' }}>{p.rolEnIncidente}</span>
-                          {p.observacion && ` - ${p.observacion}`}
+                      ) : (
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          background: '#f8fafc',
+                          borderRadius: 8,
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', marginBottom: 4 }}>
+                              {p.nombreAlumno}
+                              <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 8, fontSize: 13 }}>
+                                {p.alumnoInstitucionalId} - Curso {p.cursoAlumno}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 13, color: '#64748b' }}>
+                              {p.rolEnIncidente
+                                ? <>Rol: <span style={{ fontWeight: 500, color: '#475569' }}>{p.rolEnIncidente}</span>{p.observacion && ` - ${p.observacion}`}</>
+                                : <span style={{ color: '#dc2626', fontWeight: 500 }}>Sin rol asignado</span>
+                              }
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditandoIndex(index);
+                                setParticipanteEditando({ ...p });
+                              }}
+                              style={{ padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}
+                            >
+                              <i className="bi bi-pencil" /> Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => eliminarParticipante(index)}
+                              style={{ padding: '6px 12px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}
+                            >
+                              <i className="bi bi-trash" /> Eliminar
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => eliminarParticipante(index)}
-                        style={{
-                          padding: '6px 12px',
-                          background: '#fee2e2',
-                          color: '#dc2626',
-                          border: 'none',
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          fontSize: 13,
-                          fontWeight: 600,
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        <i className="bi bi-trash" /> Eliminar
-                      </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -563,21 +629,11 @@ export default function RegistrarPage() {
                         Seleccionado: {nuevoParticipante.alumnoNombre}
                       </span>
                     )}
-
-                    {/* Dropdown de sugerencias */}
                     {mostrarSugerencias && nuevoParticipante.curso && !nuevoParticipante.alumnoId && (
                       <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        background: '#fff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: 8,
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                        maxHeight: 200,
-                        overflowY: 'auto',
-                        zIndex: 50
+                        position: 'absolute', top: '100%', left: 0, right: 0,
+                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', maxHeight: 200, overflowY: 'auto', zIndex: 50
                       }}>
                         {alumnosFiltrados.length === 0 ? (
                           <div style={{ padding: '12px 16px', fontSize: 13, color: '#64748b', textAlign: 'center' }}>
@@ -588,21 +644,12 @@ export default function RegistrarPage() {
                             <div
                               key={alumno.id}
                               onClick={() => seleccionarAlumno(alumno)}
-                              style={{
-                                padding: '10px 16px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #f1f5f9',
-                                transition: 'background-color 0.1s'
-                              }}
+                              style={{ padding: '10px 16px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
                               onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f9ff'}
                               onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                              <div style={{ fontSize: 14, fontWeight: 500, color: '#0f172a' }}>
-                                {alumno.nombre}
-                              </div>
-                              <div style={{ fontSize: 12, color: '#64748b' }}>
-                                Curso {alumno.curso}
-                              </div>
+                              <div style={{ fontSize: 14, fontWeight: 500, color: '#0f172a' }}>{alumno.nombre}</div>
+                              <div style={{ fontSize: 12, color: '#64748b' }}>Curso {alumno.curso}</div>
                             </div>
                           ))
                         )}
@@ -624,6 +671,7 @@ export default function RegistrarPage() {
                     <option>Involucrado</option>
                   </select>
                 </Field>
+
                 <Field label="Observacion (opcional)">
                   <input
                     style={fld}

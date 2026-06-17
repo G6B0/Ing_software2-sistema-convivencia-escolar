@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter,  useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
 
@@ -15,12 +15,17 @@ export default function SeguimientoIncidentePage() {
   const [loading, setLoading] = useState(true);
   const [protocolos, setProtocolos] = useState<Record<string, string>>({});
 
+  const [mensajeGravedad, setMensajeGravedad] = useState<{ tipo: 'success' | 'error'; texto: string } | null>(null);
+
   // Seguimientos
   const [seguimientos, setSeguimientos] = useState<any[]>([]);
   const [loadingSeguimientos, setLoadingSeguimientos] = useState(true);
 
   // Sesión del funcionario
   const [funcionarioId, setFuncionarioId] = useState('');
+
+  const searchParams = useSearchParams();
+  const [mensajeExito, setMensajeExito] = useState(searchParams.get('exito') === '1');
 
   useEffect(() => {
     try {
@@ -63,7 +68,7 @@ export default function SeguimientoIncidentePage() {
     try {
       setLoadingSeguimientos(true);
       const response = await fetch(`${API_URL}/incidentes/${id}/seguimientos`, {
-        headers: { 'x-funcionario-id': funcionarioId || 'FUN-3001' }
+        headers: { 'x-funcionario-id': funcionarioId || 'FUN-300FUN-3002' }
       });
       if (response.ok) {
         const data = await response.json();
@@ -116,7 +121,7 @@ export default function SeguimientoIncidentePage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-funcionario-id': funcionarioId || 'FUN-3001'
+          'x-funcionario-id': funcionarioId || 'FUN-3002'
         },
         body: JSON.stringify({ estado: nuevoEstado })
       });
@@ -175,6 +180,23 @@ export default function SeguimientoIncidentePage() {
 
   return (
     <div style={{ padding: '28px 32px' }}>
+
+      {/* Banner exito seguimiento */}
+      {mensajeExito && (
+        <div style={{
+          marginBottom: 24,
+          padding: '16px 20px',
+          borderRadius: 10,
+          border: '1px solid #16a34a',
+          background: '#dcfce7',
+          color: '#15803d',
+          fontSize: 14,
+          fontWeight: 500,
+        }}>
+          Seguimiento registrado correctamente
+        </div>
+      )}
+
       {/* Botón volver */}
       <button
         onClick={() => router.push('/incidencias')}
@@ -292,55 +314,72 @@ export default function SeguimientoIncidentePage() {
         </div>
       </div>
 
-        {/* Cambiar gravedad */}
-        <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Cambiar gravedad:</span>
-          <select
-            value={incidente.gravedad}
-            onChange={(e) => setIncidente({ ...incidente, gravedad: e.target.value })}
-            style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e2e8f0', fontSize: 14, fontFamily: 'inherit', color: '#0f172a' }}
-          >
-            <option value="Leve">Leve</option>
-            <option value="Moderado">Moderado</option>
-            <option value="Grave">Grave</option>
-          </select>
-          <button
-            onClick={async () => {
-              try {
-                const response = await fetch(`${API_URL}/incidentes/${incidente.id}/gravedad`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json', 'x-funcionario-id': funcionarioId || 'FUN-3001' },
-                  body: JSON.stringify({ gravedad: incidente.gravedad })
-                });
-                if (response.ok) {
-                  alert('Gravedad actualizada correctamente');
-                } else {
-                  alert('Error al actualizar');
-                }
-              } catch {
-                alert('Error de conexión');
-              }
-            }}
-            style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            Guardar cambio
-          </button>
+      {/* Cambiar gravedad */}
+      {mensajeGravedad && (
+        <div style={{
+          marginTop: 24,
+          padding: '16px 20px',
+          borderRadius: 10,
+          border: '1px solid',
+          background: mensajeGravedad.tipo === 'success' ? '#dcfce7' : '#fee2e2',
+          borderColor: mensajeGravedad.tipo === 'success' ? '#16a34a' : '#dc2626',
+          color: mensajeGravedad.tipo === 'success' ? '#15803d' : '#991b1b',
+          fontSize: 14,
+          fontWeight: 500,
+        }}>
+          {mensajeGravedad.texto}
         </div>
-            {(() => {
-            const protocolo = obtenerProtocolo(incidente.gravedad);
-            if (!protocolo) return null;
-            return (
-              <div style={{ marginTop: 24, background: protocolo.bg, borderRadius: 12, border: `1px solid ${protocolo.color}33`, padding: '24px 28px' }}>
-                <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: protocolo.color, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <i className={`bi ${protocolo.icono}`} />
-                  Protocolo asociado
-                </h3>
-                <p style={{ margin: 0, fontSize: 14, color: protocolo.color, fontWeight: 500 }}>
-                  {protocolo.texto}
-                </p>
-              </div>
-            );
-          })()}
+      )}
+      <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Cambiar gravedad:</span>
+        <select
+          value={incidente.gravedad}
+          onChange={(e) => setIncidente({ ...incidente, gravedad: e.target.value })}
+          style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e2e8f0', fontSize: 14, fontFamily: 'inherit', color: '#0f172a' }}
+        >
+          <option value="Leve">Leve</option>
+          <option value="Moderado">Moderado</option>
+          <option value="Grave">Grave</option>
+        </select>
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch(`${API_URL}/incidentes/${incidente.id}/gravedad`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-funcionario-id': 'FUN-3002' },
+                body: JSON.stringify({ gravedad: incidente.gravedad })
+              });
+              if (response.ok) {
+                setMensajeGravedad({ tipo: 'success', texto: 'Gravedad actualizada correctamente' });
+              } else {
+                setMensajeGravedad({ tipo: 'error', texto: 'Error al actualizar la gravedad' });
+              }
+            } catch {
+              setMensajeGravedad({ tipo: 'error', texto: 'Error de conexion' });
+            }
+            setTimeout(() => setMensajeGravedad(null), 3000);
+          }}
+          style={{ padding: '8px 16px', background: '#0f172a', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          Guardar cambio
+        </button>
+      </div>
+
+      {(() => {
+        const protocolo = obtenerProtocolo(incidente.gravedad);
+        if (!protocolo) return null;
+        return (
+          <div style={{ marginTop: 24, background: protocolo.bg, borderRadius: 12, border: `1px solid ${protocolo.color}33`, padding: '24px 28px' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: protocolo.color, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className={`bi ${protocolo.icono}`} />
+              Protocolo asociado
+            </h3>
+            <p style={{ margin: 0, fontSize: 14, color: protocolo.color, fontWeight: 500 }}>
+              {protocolo.texto}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Resumen del incidente */}
       <div style={{ marginTop: 24, background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '28px 32px' }}>
@@ -418,7 +457,6 @@ export default function SeguimientoIncidentePage() {
                 'Cerrado': { bg: '#e2e8f0', color: '#475569' },
               };
               const estilo = estadoColores[incidente.estado] || { bg: '#fff', color: '#0f172a' };
-
               return (
                 <select
                   value={incidente.estado}
@@ -489,7 +527,6 @@ export default function SeguimientoIncidentePage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {[...seguimientos].reverse().map((seg: any, idx: number) => (
               <div key={seg.id || idx} style={{ display: 'flex', gap: 16, paddingBottom: idx < seguimientos.length - 1 ? 28 : 0 }}>
-                {/* Punto */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 6 }}>
                   <div style={{
                     width: 14,
@@ -503,8 +540,6 @@ export default function SeguimientoIncidentePage() {
                     <div style={{ width: 2, flex: 1, background: '#e2e8f0', marginTop: 6 }} />
                   )}
                 </div>
-
-                {/* Contenido */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>

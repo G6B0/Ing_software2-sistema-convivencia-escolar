@@ -72,6 +72,11 @@ class ServicioInstitucional {
     }
     return resultado
   }
+  consultarDirector() {
+    return Array.from(this.funcionariosPorId.values()).find(
+      f => f.rol === 'director'
+    ) || null
+  }
 }
 
 module.exports = ServicioInstitucional

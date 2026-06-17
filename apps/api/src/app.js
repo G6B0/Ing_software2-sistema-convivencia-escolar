@@ -1,20 +1,29 @@
 const express = require('express')
 const cors = require('cors')
 const ServicioInstitucional = require('./lib/servicioInstitucional')
-const { ErrorValidacionSistema } = require('./lib/erroresSistema')
+const { ErrorAutorizacionSistema, ErrorValidacionSistema } = require('./lib/erroresSistema')
 const { PersistenciaSistemaMemoria } = require('./lib/persistenciaSistema')
 const ServicioIncidentes = require('./lib/servicioIncidentes')
 const { ServicioAutenticacion } = require('./lib/servicioAutenticacion')
+const ServicioAutorizacion = require('./lib/servicioAutorizacion')
+const { PERMISOS } = require('./lib/rolesPermisos')
 const seguimientoRoutes = require('./routes/seguimientoroutes')
 const authRoutes = require('./routes/authRoutes')
+const reportesRoutes = require('./routes/reportesRoutes')
+const rolesPermisosRoutes = require('./routes/rolesPermisosRoutes')
 
 function crearApp({
   servicioInstitucional = new ServicioInstitucional(),
   persistenciaSistema = new PersistenciaSistemaMemoria(),
   servicioIncidentes = new ServicioIncidentes({ persistenciaSistema, servicioInstitucional }),
+  servicioAutorizacion = new ServicioAutorizacion({
+    servicioInstitucional,
+    persistenciaSistema,
+  }),
   servicioAutenticacion = new ServicioAutenticacion({
     persistenciaSistema,
     servicioInstitucional,
+    servicioAutorizacion,
   }),
 } = {}) {
   const app = express()
@@ -23,8 +32,11 @@ function crearApp({
   app.use(express.json())
   app.locals.servicioIncidentes = servicioIncidentes
   app.locals.servicioAutenticacion = servicioAutenticacion
+  app.locals.servicioAutorizacion = servicioAutorizacion
   app.use('/', authRoutes)
+  app.use('/', rolesPermisosRoutes)
   app.use('/', seguimientoRoutes)
+  app.use('/', reportesRoutes)
 
   app.get('/institucional/alumnos/:alumnoId', (req, res) => {
     const alumno = servicioInstitucional.consultarAlumnoPorId(req.params.alumnoId)
@@ -81,9 +93,18 @@ function crearApp({
 
   app.post('/incidentes', async (req, res) => {
     try {
+      servicioAutorizacion.verificarPermisoFuncionario(
+        req.header('x-funcionario-id') || req.body.funcionarioResponsableId,
+        PERMISOS.REGISTRAR_INCIDENTES
+      )
+
       const incidente = await servicioIncidentes.registrarIncidente(req.body)
       return res.status(201).json({ ok: true, data: incidente })
     } catch (error) {
+      if (error instanceof ErrorAutorizacionSistema) {
+        return res.status(403).json({ ok: false, mensaje: error.message })
+      }
+
       if (error instanceof ErrorValidacionSistema) {
         return res.status(400).json({ ok: false, mensaje: error.message })
       }
@@ -112,6 +133,36 @@ function crearApp({
     }
 
     return res.json({ ok: true, data: incidente })
+  })
+  
+  app.get('/notificaciones', async (req, res) => {
+    try {
+      const destinatarioId = req.header('x-funcionario-id')
+      if (!destinatarioId) {
+        return res.status(400).json({ ok: false, mensaje: 'Falta el header x-funcionario-id' })
+      }
+      const limit = parseInt(req.query.limit) || 5
+      const offset = parseInt(req.query.offset) || 0
+      const { notificaciones, total } = await persistenciaSistema.consultarNotificacionesPorDestinatario(destinatarioId, limit, offset)
+      return res.json({ ok: true, data: notificaciones, total })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ ok: false, mensaje: 'No se pudieron obtener las notificaciones.' })
+    }
+  })
+  app.patch('/notificaciones/:notificacionId/leida', async (req, res) => {
+    try {
+      const notificacion = await persistenciaSistema.marcarNotificacionLeida(req.params.notificacionId)
+
+      if (!notificacion) {
+        return res.status(404).json({ ok: false, mensaje: 'Notificación no encontrada.' })
+      }
+
+      return res.json({ ok: true, data: notificacion })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ ok: false, mensaje: 'No se pudo marcar la notificación como leída.' })
+    }
   })
 
   app.get('/test-supabase', async (_req, res) => {
