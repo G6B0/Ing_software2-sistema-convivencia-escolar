@@ -323,13 +323,37 @@ export default function RegistrarPage() {
       const resultado = await response.json();
 
       if (resultado.ok) {
-        const correoEnviado = resultado.data?.emailSent || resultado.emailSent;
-        setMensaje({
-          tipo: 'success',
-          texto: correoEnviado
-            ? 'Incidente registrado y apoderado notificado exitosamente.'
-            : 'Incidente registrado (No se pudo notificar al apoderado).'
-        });
+        // =========================================================
+        // Alertas visuales condicionales
+        // =========================================================
+        
+        // REGLA UX: Si es Leve, damos un mensaje de éxito limpio y normal.
+        if (form.gravedad === 'Leve') {
+          alert('✅ Incidente registrado exitosamente.');
+          setMensaje({
+            tipo: 'success',
+            texto: 'Incidente registrado exitosamente.'
+          });
+        } 
+        // Si es Moderado o Grave, evaluamos el estado del correo
+        else {
+          const correoEnviado = resultado.data?.emailSent || resultado.emailSent;
+          
+          if (correoEnviado) {
+            alert('✅ Incidente registrado y apoderado notificado exitosamente.');
+            setMensaje({
+              tipo: 'success',
+              texto: 'Incidente registrado y apoderado notificado exitosamente.'
+            });
+          } else {
+            alert('⚠️ Incidente registrado, pero no se pudo notificar al apoderado (Sin correo registrado).');
+            setMensaje({
+              tipo: 'success', 
+              texto: 'Incidente registrado (No se pudo notificar al apoderado).'
+            });
+          }
+        }
+        
         limpiarFormulario();
       } else {
         setMensaje({ tipo: 'error', texto: resultado.mensaje || 'Error al registrar el incidente' });
