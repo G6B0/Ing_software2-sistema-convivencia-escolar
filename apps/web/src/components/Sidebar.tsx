@@ -18,6 +18,9 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [notificaciones, setNotificaciones] = useState<any[]>([]);
   const [mostrarPanel, setMostrarPanel] = useState(false);
   const [funcionarioId, setFuncionarioId] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [hayMas, setHayMas] = useState(false);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     try {
@@ -30,16 +33,23 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     if (user.role !== 'director' || !funcionarioId) return;
 
     const cargar = () => {
-      fetch(`${API_URL}/notificaciones`, {
+      fetch(`${API_URL}/notificaciones?limit=5&offset=0`, {
         headers: { 'x-funcionario-id': funcionarioId }
       })
         .then(r => r.json())
-        .then(data => { if (data.ok) setNotificaciones(data.data) })
+        .then(data => {
+          if (data.ok) {
+            setNotificaciones(data.data);
+            setTotal(data.total);
+            setHayMas(5 < data.total);
+            setOffset(0);
+          }
+        })
         .catch(() => {});
     };
 
     cargar();
-    const intervalo = setInterval(cargar, 30000); // refresca cada 30 segundos
+    const intervalo = setInterval(cargar, 10000);
     return () => clearInterval(intervalo);
   }, [funcionarioId, user.role]);
   
@@ -145,35 +155,70 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                         <p style={{ marginTop: 8, fontSize: 14 }}>No hay notificaciones</p>
                       </div>
                     ) : (
-                      notificaciones.map(n => (
-                        <Link
-                          key={n.id}
-                          href={`/seguimiento/${n.incidenteId}`}
-                          onClick={() => { marcarLeida(n); setMostrarPanel(false); }}
-                          style={{
-                            display: 'block',
-                            padding: '14px 20px',
-                            borderBottom: '1px solid #f1f5f9',
-                            background: n.leida ? '#fff' : '#eff6ff',
-                            textDecoration: 'none',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                            <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: 14, marginTop: 2, flexShrink: 0 }} />
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: n.leida ? 400 : 600, color: '#0f172a' }}>{n.titulo}</div>
-                              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-                                {new Date(n.fechaCreacion).toLocaleDateString('es-CL')}
+                        <>
+                          {notificaciones.map(n => (
+                            <Link
+                              key={n.id}
+                              href={`/seguimiento/${n.incidenteId}`}
+                              onClick={() => { marcarLeida(n); setMostrarPanel(false); }}
+                              style={{
+                                display: 'block',
+                                padding: '14px 20px',
+                                borderBottom: '1px solid #f1f5f9',
+                                background: n.leida ? '#fff' : '#eff6ff',
+                                textDecoration: 'none',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                <i className="bi bi-exclamation-triangle-fill" style={{ color: '#ef4444', fontSize: 14, marginTop: 2, flexShrink: 0 }} />
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: n.leida ? 400 : 600, color: '#0f172a' }}>{n.titulo}</div>
+                                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                                    {new Date(n.fechaCreacion).toLocaleDateString('es-CL')}
+                                  </div>
+                                </div>
+                                {!n.leida && (
+                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', marginLeft: 'auto', flexShrink: 0, marginTop: 4 }} />
+                                )}
                               </div>
-                            </div>
-                            {!n.leida && (
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', marginLeft: 'auto', flexShrink: 0, marginTop: 4 }} />
-                            )}
-                          </div>
-                        </Link>
-                      ))
-                    )}
+                            </Link>
+                          ))}
+                          {hayMas && (
+                            <button
+                              onClick={() => {
+                                const nuevoOffset = offset + 5;
+                                fetch(`${API_URL}/notificaciones?limit=5&offset=${nuevoOffset}`, {
+                                  headers: { 'x-funcionario-id': funcionarioId }
+                                })
+                                  .then(r => r.json())
+                                  .then(data => {
+                                    if (data.ok) {
+                                      setNotificaciones(prev => [...prev, ...data.data]);
+                                      setOffset(nuevoOffset);
+                                      setHayMas(nuevoOffset + 5 < data.total);
+                                    }
+                                  })
+                                  .catch(() => {});
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: 'transparent',
+                                border: 'none',
+                                borderTop: '1px solid #f1f5f9',
+                                color: '#3b82f6',
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                fontFamily: 'inherit'
+                              }}
+                            >
+                              Ver más
+                            </button>
+                          )}
+                        </>
+                      )}
                   </div>
                 </div>
               )}

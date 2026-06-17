@@ -272,7 +272,7 @@ class PersistenciaSistemaSupabase {
 
     return desdeIncidenteSupabase(incidente, participantes)
   }
-  async consultarNotificacionesPorDestinatario(destinatarioId) {
+  async consultarNotificacionesPorDestinatario(destinatarioId, limit = 5, offset = 0) {
     const { data: notificaciones, error } = await this.supabase
       .from('notificaciones')
       .select(`
@@ -282,21 +282,29 @@ class PersistenciaSistemaSupabase {
         )
       `)
       .eq('destinatario_id', destinatarioId)
-      .not('incidentes.estado', 'eq', 'Cerrado')
+      .order('leida', { ascending: true })
       .order('fecha_creacion', { ascending: false })
 
-    asegurarSinError(error, 'No se pudieron consultar las notificaciones')
+      asegurarSinError(error, 'No se pudieron consultar las notificaciones')
 
-    return (notificaciones || [])
-      .filter(n => n.incidentes !== null)
-      .map(n => ({
-        id: n.id,
-        titulo: n.titulo,
-        incidenteId: n.incidente_id,
-        fechaCreacion: n.fecha_creacion,
-        leida: n.leida,
-        destinatarioId: n.destinatario_id,
-      }))
+      const filtradas = (notificaciones || [])
+      .filter(n => n.incidentes !== null && n.incidentes.estado !== 'Cerrado')
+
+    const total = filtradas.length
+
+    return {
+      total,
+      notificaciones: filtradas
+        .slice(offset, offset + limit)
+        .map(n => ({
+          id: n.id,
+          titulo: n.titulo,
+          incidenteId: n.incidente_id,
+          fechaCreacion: n.fecha_creacion,
+          leida: n.leida,
+          destinatarioId: n.destinatario_id,
+        }))
+    }
   }
   async marcarNotificacionLeida(notificacionId) {
     const { data: notificacion, error } = await this.supabase
