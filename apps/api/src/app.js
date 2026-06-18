@@ -164,6 +164,19 @@ function crearApp({
       return res.status(500).json({ ok: false, mensaje: 'No se pudo marcar la notificación como leída.' })
     }
   })
+  app.get('/notificaciones/contador', async (req, res) => {
+    try {
+      const destinatarioId = req.header('x-funcionario-id')
+      if (!destinatarioId) {
+        return res.status(400).json({ ok: false, mensaje: 'Falta el header x-funcionario-id' })
+      }
+      const noLeidas = await persistenciaSistema.contarNotificacionesNoLeidas(destinatarioId)
+      return res.json({ ok: true, noLeidas })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({ ok: false, mensaje: 'No se pudo obtener el contador.' })
+    }
+  })
 
   app.get('/test-supabase', async (_req, res) => {
     try {
