@@ -175,7 +175,7 @@ export default function DashboardPage() {
           <i className="bi bi-list-check" /> Ver seguimiento
         </Btn>
         <Btn onClick={() => router.push('/mensual')} variant="secondary">
-          <i className="bi bi-calendar3" /> Reporte mensual
+          <i className="bi bi-calendar3" /> Reporte anual
         </Btn>
       </div>
 
@@ -186,24 +186,31 @@ export default function DashboardPage() {
           value={kpis.incidenciasMes}
           icon="calendar-check"
           color="#003087"
+          onClick={() => {
+            const ahora = new Date();
+            router.push(`/incidencias?mes=${ahora.getMonth() + 1}&anio=${ahora.getFullYear()}`);
+          }}
         />
         <StatCard
           label="Casos graves"
           value={kpis.graves}
           icon="exclamation-triangle"
           color="#991b1b"
+          onClick={() => router.push('/incidencias?gravedad=Grave')}
         />
         <StatCard
           label="En seguimiento"
           value={kpis.enSeguimiento}
           icon="arrow-repeat"
           color="#7c3aed"
+          onClick={() => router.push(`/incidencias?estado=${encodeURIComponent('En seguimiento')}`)}
         />
         <StatCard
           label="Alumnos reincidentes"
           value={kpis.reincidentes}
           icon="person-exclamation"
           color="#92400e"
+          onClick={() => router.push('/reincidentes')}
         />
       </div>
 
@@ -219,7 +226,7 @@ export default function DashboardPage() {
               onClick={() => router.push('/mensual')}
               style={{ fontSize: 13, color: '#003087', cursor: 'pointer', textDecoration: 'none', fontWeight: 600 }}
             >
-              Ver Reporte Mensual →
+              Ver Reporte Anual →
             </a>
           </div>
           {evolucionData.length > 0 ? (

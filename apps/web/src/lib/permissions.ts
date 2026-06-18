@@ -110,7 +110,7 @@ export const NAVIGATION_ITEMS = [
   },
   {
     id: 'mensual',
-    label: 'Reporte Mensual',
+    label: 'Reporte Anual',
     icon: 'calendar3',
     href: '/mensual',
     permissions: [PERMISSIONS.REVIEW_REPORTS, PERMISSIONS.CONSULT_REPORTS],
