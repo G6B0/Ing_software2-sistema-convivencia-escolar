@@ -474,7 +474,10 @@ test('API incidentes: permite guardar y consultar un incidente posteriormente', 
 
     const respuestaCreacion = await fetch(`${baseUrl}/incidentes`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        'x-funcionario-id': 'FUN-3001',
+      },
       body: JSON.stringify({
         titulo: 'Agresion verbal en recreo',
         fecha: '2026-05-14T10:00:00.000Z',
@@ -494,7 +497,9 @@ test('API incidentes: permite guardar y consultar un incidente posteriormente', 
     assert.equal(creacion.data.participantes.length, 2)
     assert.equal(creacion.data.participantes[0].alumnoInstitucionalId, 'ALU-1001')
 
-    const respuestaConsulta = await fetch(`${baseUrl}/incidentes/${creacion.data.id}`)
+    const respuestaConsulta = await fetch(`${baseUrl}/incidentes/${creacion.data.id}`, {
+      headers: { 'x-funcionario-id': 'FUN-3001' },
+    })
     const consulta = await respuestaConsulta.json()
 
     assert.equal(respuestaConsulta.status, 200)
@@ -518,7 +523,10 @@ test('API incidentes: actualiza el estado de un incidente', async () => {
 
     const respuestaCreacion = await fetch(`${baseUrl}/incidentes`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        'x-funcionario-id': 'FUN-3001',
+      },
       body: JSON.stringify({
         titulo: 'Agresion verbal en recreo',
         fecha: '2026-05-14T10:00:00.000Z',
@@ -545,7 +553,9 @@ test('API incidentes: actualiza el estado de un incidente', async () => {
     assert.equal(respuestaActualizacion.status, 200)
     assert.equal(actualizacion.incidente.estado, 'En seguimiento')
 
-    const respuestaConsulta = await fetch(`${baseUrl}/incidentes/${creacion.data.id}`)
+    const respuestaConsulta = await fetch(`${baseUrl}/incidentes/${creacion.data.id}`, {
+      headers: { 'x-funcionario-id': 'FUN-3002' },
+    })
     const consulta = await respuestaConsulta.json()
 
     assert.equal(consulta.data.estado, 'En seguimiento')

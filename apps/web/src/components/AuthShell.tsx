@@ -4,6 +4,11 @@ import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { canAccessPath, getPermissions } from '@/lib/permissions';
+import {
+  apiFetch,
+  SESSION_STORAGE_KEY,
+  SESSION_UPDATED_EVENT,
+} from '@/lib/api';
 
 export interface FuncionarioSesion {
   id: string;
@@ -18,7 +23,7 @@ export interface SesionUsuario {
   funcionario: FuncionarioSesion;
 }
 
-export const SESSION_STORAGE_KEY = 'sce_sesion';
+export { SESSION_STORAGE_KEY };
 
 interface AuthShellProps {
   children: ReactNode;
@@ -32,6 +37,7 @@ export default function AuthShell({ children }: AuthShellProps) {
   const permisos = sesion
     ? getPermissions(sesion.funcionario.rol, sesion.funcionario.permisos)
     : [];
+  const funcionarioSesionId = sesion?.funcionario.id;
 
   useEffect(() => {
     try {
@@ -43,6 +49,55 @@ export default function AuthShell({ children }: AuthShellProps) {
       setValidandoSesion(false);
     }
   }, [pathname]);
+
+  useEffect(() => {
+    if (validandoSesion || !funcionarioSesionId || pathname === '/login') {
+      return;
+    }
+
+    let activo = true;
+
+    apiFetch('/auth/permisos')
+      .then(response => response.json().then(body => ({ response, body })))
+      .then(({ response, body }) => {
+        if (!activo || !response.ok) {
+          return;
+        }
+
+        setSesion(actual => {
+          if (!actual) {
+            return actual;
+          }
+
+          const permisosActuales = actual.funcionario.permisos || [];
+          const permisosNuevos = body.data.permisos as string[];
+
+          if (
+            permisosActuales.length === permisosNuevos.length &&
+            permisosActuales.every(permission => permisosNuevos.includes(permission))
+          ) {
+            return actual;
+          }
+
+          const sesionActualizada = {
+            ...actual,
+            funcionario: {
+              ...actual.funcionario,
+              permisos: permisosNuevos,
+            },
+          };
+
+          window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sesionActualizada));
+          window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+          return sesionActualizada;
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      activo = false;
+    };
+  }, [funcionarioSesionId, pathname, validandoSesion]);
 
   useEffect(() => {
     if (validandoSesion) {

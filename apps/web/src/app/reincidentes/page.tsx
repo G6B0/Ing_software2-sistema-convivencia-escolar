@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
 
 interface FilaAlumno {
   id: string;
@@ -24,7 +23,7 @@ export default function ReincidentesPage() {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const res = await fetch(`${API_URL}/incidentes`);
+        const res = await apiFetch('/incidentes');
         if (!res.ok) throw new Error('Error al obtener los datos');
         const resultado = await res.json();
         if (!resultado.ok) throw new Error(resultado.mensaje || 'Error en la respuesta');

@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
 
 interface FilaCurso {
   curso: string;
@@ -20,7 +19,7 @@ export default function RankingPage() {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const response = await fetch(`${API_URL}/incidentes`);
+        const response = await apiFetch('/incidentes');
         if (!response.ok) throw new Error('Error al obtener los datos');
         const resultado = await response.json();
         if (!resultado.ok) throw new Error(resultado.mensaje || 'Error en la respuesta');

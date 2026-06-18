@@ -1,8 +1,9 @@
 const express = require('express')
-const { iniciarSesion } = require('../controllers/authController')
+const { consultarPermisosSesion, iniciarSesion } = require('../controllers/authController')
 
 const router = express.Router()
 
 router.post('/auth/login', iniciarSesion)
+router.get('/auth/permisos', consultarPermisosSesion)
 
 module.exports = router

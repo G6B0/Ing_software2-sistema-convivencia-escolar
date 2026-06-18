@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Btn from '@/components/Btn';
 import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
+import { useSessionPermissions } from '@/hooks/useSessionPermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 const fld = {
   padding: '9px 12px',
@@ -27,6 +28,8 @@ export default function IncidenciasPage() {
   const [incidentes, setIncidentes] = useState<any[]>([]);
   const [loadingIncidentes, setLoadingIncidentes] = useState(false);
   const [cursos, setCursos] = useState<string[]>([]);
+  const permisos = useSessionPermissions();
+  const puedeRegistrar = permisos.includes(PERMISSIONS.REGISTER_INCIDENTS);
 
   // Filtros
   const [busqueda, setBusqueda] = useState('');
@@ -64,8 +67,8 @@ export default function IncidenciasPage() {
       setLoadingIncidentes(true);
       try {
         const [incRes, cursosRes] = await Promise.all([
-          fetch(`${API_URL}/incidentes`),
-          fetch(`${API_URL}/institucional/cursos`)
+          apiFetch('/incidentes'),
+          apiFetch('/institucional/cursos')
         ]);
 
         const incData = await incRes.json();
@@ -137,9 +140,11 @@ export default function IncidenciasPage() {
             {incidentesFiltrados.length} de {incidentes.length} registros
           </p>
         </div>
-        <Btn onClick={() => router.push('/registrar')}>
-          <i className="bi bi-plus-lg" /> Registrar incidencia
-        </Btn>
+        {puedeRegistrar && (
+          <Btn onClick={() => router.push('/registrar')}>
+            <i className="bi bi-plus-lg" /> Registrar incidencia
+          </Btn>
+        )}
       </div>
 
       {/* Filtros */}

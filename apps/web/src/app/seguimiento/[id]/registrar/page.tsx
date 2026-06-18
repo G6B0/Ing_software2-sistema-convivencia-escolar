@@ -3,8 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
 
 const obtenerFechaLocalISO = () => {
   const fechaActual = new Date();
@@ -64,11 +63,10 @@ export default function RegistrarSeguimientoPage() {
     setEnviando(true);
 
     try {
-      const response = await fetch(`${API_URL}/incidentes/${incidenteId}/seguimientos`, {
+      const response = await apiFetch(`/incidentes/${incidenteId}/seguimientos`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-funcionario-id': sesion?.funcionario.id || ''
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           descripcion,

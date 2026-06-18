@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Btn from '@/components/Btn';
 import { nombreFuncionario } from '@/lib/displayNames';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
+import { useSessionPermissions } from '@/hooks/useSessionPermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 export default function AlumnoPerfilPage() {
   const router = useRouter();
@@ -14,14 +15,16 @@ export default function AlumnoPerfilPage() {
   const [alumno, setAlumno] = useState<any | null>(null);
   const [apoderados, setApoderados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const permisos = useSessionPermissions();
+  const puedeRegistrar = permisos.includes(PERMISSIONS.REGISTER_INCIDENTS);
 
   useEffect(() => {
     const cargarIncidentes = async () => {
       try {
         const [incRes, alumnoRes, apoderadosRes] = await Promise.all([
-          fetch(`${API_URL}/incidentes`),
-          fetch(`${API_URL}/institucional/alumnos/${params.id}`),
-          fetch(`${API_URL}/institucional/alumnos/${params.id}/apoderados`)
+          apiFetch('/incidentes'),
+          apiFetch(`/institucional/alumnos/${params.id}`),
+          apiFetch(`/institucional/alumnos/${params.id}/apoderados`)
         ]);
 
         if (incRes.ok) {
@@ -144,9 +147,11 @@ export default function AlumnoPerfilPage() {
             </div>
           </div>
         </div>
-        <Btn variant="primary" onClick={() => router.push(`/registrar?alumnoId=${params.id}&alumnoNombre=${encodeURIComponent(nombreAlumno)}&alumnoCurso=${encodeURIComponent(curso)}`)}>
-          <i className="bi bi-plus-circle" /> Nuevo incidente
-        </Btn>
+        {puedeRegistrar && (
+          <Btn variant="primary" onClick={() => router.push(`/registrar?alumnoId=${params.id}&alumnoNombre=${encodeURIComponent(nombreAlumno)}&alumnoCurso=${encodeURIComponent(curso)}`)}>
+            <i className="bi bi-plus-circle" /> Nuevo incidente
+          </Btn>
+        )}
       </div>
 
       {/* Estadísticas */}

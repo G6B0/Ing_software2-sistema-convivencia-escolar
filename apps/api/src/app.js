@@ -11,6 +11,25 @@ const seguimientoRoutes = require('./routes/seguimientoroutes')
 const authRoutes = require('./routes/authRoutes')
 const reportesRoutes = require('./routes/reportesRoutes')
 const rolesPermisosRoutes = require('./routes/rolesPermisosRoutes')
+const {
+  autorizarPermisos,
+  autorizarTodosLosPermisos,
+} = require('./middleware/autorizacion')
+
+const PERMISOS_CONSULTAR_INCIDENTES = [
+  PERMISOS.CONSULTAR_INCIDENTES,
+  PERMISOS.CONSULTAR_INCIDENTES_PROPIOS_O_GENERALES,
+  PERMISOS.CONSULTAR_HISTORIAL,
+  PERMISOS.REGISTRAR_SEGUIMIENTOS,
+  PERMISOS.REGISTRAR_SEGUIMIENTOS_BASICOS,
+  PERMISOS.MODIFICAR_GRAVEDAD,
+  PERMISOS.GESTIONAR_ESTADOS_OPERATIVOS,
+  PERMISOS.CAMBIAR_ESTADO_INCIDENTES,
+  PERMISOS.GESTIONAR_INCIDENTES,
+  PERMISOS.VISUALIZAR_REINCIDENCIA,
+  PERMISOS.REVISAR_REPORTES,
+  PERMISOS.CONSULTAR_REPORTES,
+]
 
 function crearApp({
   servicioInstitucional = new ServicioInstitucional(),
@@ -38,7 +57,10 @@ function crearApp({
   app.use('/', seguimientoRoutes)
   app.use('/', reportesRoutes)
 
-  app.get('/institucional/alumnos/:alumnoId', (req, res) => {
+  app.get(
+    '/institucional/alumnos/:alumnoId',
+    autorizarPermisos(PERMISOS.CONSULTAR_ALUMNOS),
+    (req, res) => {
     const alumno = servicioInstitucional.consultarAlumnoPorId(req.params.alumnoId)
 
     if (!alumno) {
@@ -49,9 +71,13 @@ function crearApp({
     }
 
     return res.json({ ok: true, data: alumno })
-  })
+    }
+  )
 
-  app.get('/institucional/alumnos/:alumnoId/apoderados', (req, res) => {
+  app.get(
+    '/institucional/alumnos/:alumnoId/apoderados',
+    autorizarPermisos(PERMISOS.CONSULTAR_ALUMNOS),
+    (req, res) => {
     const apoderados = servicioInstitucional.obtenerApoderadosDeAlumno(req.params.alumnoId)
 
     if (!apoderados) {
@@ -62,9 +88,13 @@ function crearApp({
     }
 
     return res.json({ ok: true, data: apoderados })
-  })
+    }
+  )
 
-  app.get('/institucional/funcionarios/:identificador', (req, res) => {
+  app.get(
+    '/institucional/funcionarios/:identificador',
+    autorizarPermisos(PERMISOS.ACCEDER_CONFIGURACION),
+    (req, res) => {
     const funcionario = servicioInstitucional.consultarFuncionario(req.params.identificador)
 
     if (!funcionario) {
@@ -75,30 +105,41 @@ function crearApp({
     }
 
     return res.json({ ok: true, data: funcionario })
-  })
+    }
+  )
 
-  app.get('/institucional/cursos', (req, res) => {
+  app.get('/institucional/cursos', autorizarPermisos(PERMISOS.CONSULTAR_ALUMNOS), (req, res) => {
     const cursos = servicioInstitucional.listarCursos()
     return res.json({ ok: true, data: cursos })
   })
 
-  app.get('/institucional/cursos/:curso/alumnos', (req, res) => {
+  app.get(
+    '/institucional/cursos/:curso/alumnos',
+    autorizarPermisos(PERMISOS.CONSULTAR_ALUMNOS),
+    (req, res) => {
     const alumnos = servicioInstitucional.listarAlumnosPorCurso(req.params.curso)
     return res.json({ ok: true, data: alumnos })
-  })
+    }
+  )
 
-  app.get('/institucional/protocolos', (req, res) => {
+  app.get('/institucional/protocolos', autorizarPermisos([
+    PERMISOS.REGISTRAR_INCIDENTES,
+    PERMISOS.MODIFICAR_GRAVEDAD,
+    PERMISOS.GESTIONAR_INCIDENTES,
+  ]), (req, res) => {
     return res.json({ ok: true, data: servicioInstitucional.protocolos })
   })
 
-  app.post('/incidentes', async (req, res) => {
+  app.post('/incidentes', autorizarTodosLosPermisos([
+    PERMISOS.REGISTRAR_INCIDENTES,
+    PERMISOS.CONSULTAR_ALUMNOS,
+  ]), async (req, res) => {
     try {
-      servicioAutorizacion.verificarPermisoFuncionario(
-        req.header('x-funcionario-id') || req.body.funcionarioResponsableId,
-        PERMISOS.REGISTRAR_INCIDENTES
-      )
-
-      const incidente = await servicioIncidentes.registrarIncidente(req.body)
+      const funcionarioSesionId = req.header('x-funcionario-id')
+      const incidente = await servicioIncidentes.registrarIncidente({
+        ...req.body,
+        funcionarioResponsableId: funcionarioSesionId,
+      })
       return res.status(201).json({ ok: true, data: incidente })
     } catch (error) {
       if (error instanceof ErrorAutorizacionSistema) {
@@ -113,7 +154,7 @@ function crearApp({
     }
   })
 
-  app.get('/incidentes', async (req, res) => {
+  app.get('/incidentes', autorizarPermisos(PERMISOS_CONSULTAR_INCIDENTES), async (req, res) => {
     try {
       const incidentes = await servicioIncidentes.listarIncidentes()
       return res.json({ ok: true, data: incidentes })
@@ -122,7 +163,10 @@ function crearApp({
     }
   })
 
-  app.get('/incidentes/:incidenteId', async (req, res) => {
+  app.get(
+    '/incidentes/:incidenteId',
+    autorizarPermisos(PERMISOS_CONSULTAR_INCIDENTES),
+    async (req, res) => {
     const incidente = await servicioIncidentes.consultarIncidentePorId(req.params.incidenteId)
 
     if (!incidente) {
@@ -132,10 +176,11 @@ function crearApp({
       })
     }
 
-    return res.json({ ok: true, data: incidente })
-  })
+      return res.json({ ok: true, data: incidente })
+    }
+  )
   
-  app.get('/notificaciones', async (req, res) => {
+  app.get('/notificaciones', autorizarPermisos(PERMISOS.VISUALIZAR_ALERTAS), async (req, res) => {
     try {
       const destinatarioId = req.header('x-funcionario-id')
       if (!destinatarioId) {
@@ -150,7 +195,10 @@ function crearApp({
       return res.status(500).json({ ok: false, mensaje: 'No se pudieron obtener las notificaciones.' })
     }
   })
-  app.patch('/notificaciones/:notificacionId/leida', async (req, res) => {
+  app.patch(
+    '/notificaciones/:notificacionId/leida',
+    autorizarPermisos(PERMISOS.VISUALIZAR_ALERTAS),
+    async (req, res) => {
     try {
       const notificacion = await persistenciaSistema.marcarNotificacionLeida(req.params.notificacionId)
 
@@ -163,8 +211,12 @@ function crearApp({
       console.error(error)
       return res.status(500).json({ ok: false, mensaje: 'No se pudo marcar la notificación como leída.' })
     }
-  })
-  app.get('/notificaciones/contador', async (req, res) => {
+    }
+  )
+  app.get(
+    '/notificaciones/contador',
+    autorizarPermisos(PERMISOS.VISUALIZAR_ALERTAS),
+    async (req, res) => {
     try {
       const destinatarioId = req.header('x-funcionario-id')
       if (!destinatarioId) {
@@ -176,9 +228,10 @@ function crearApp({
       console.error(error)
       return res.status(500).json({ ok: false, mensaje: 'No se pudo obtener el contador.' })
     }
-  })
+    }
+  )
 
-  app.get('/test-supabase', async (_req, res) => {
+  app.get('/test-supabase', autorizarPermisos(PERMISOS.ACCEDER_CONFIGURACION), async (_req, res) => {
     try {
       const { crearClienteSupabase } = require('./lib/supabase')
       const supabase = crearClienteSupabase()
