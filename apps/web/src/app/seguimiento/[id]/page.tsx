@@ -3,9 +3,9 @@
 import { useParams, useRouter,  useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const SESSION_STORAGE_KEY = 'sce_sesion';
+import { apiFetch } from '@/lib/api';
+import { useSessionPermissions } from '@/hooks/useSessionPermissions';
+import { hasAnyPermission, PERMISSIONS } from '@/lib/permissions';
 
 export default function SeguimientoIncidentePage() {
   const router = useRouter();
@@ -22,23 +22,28 @@ export default function SeguimientoIncidentePage() {
   const [loadingSeguimientos, setLoadingSeguimientos] = useState(true);
 
   // Sesión del funcionario
-  const [funcionarioId, setFuncionarioId] = useState('');
+  const permisos = useSessionPermissions();
+  const puedeRegistrarSeguimiento = hasAnyPermission(permisos, [
+    PERMISSIONS.REGISTER_FOLLOWUPS,
+    PERMISSIONS.REGISTER_BASIC_FOLLOWUPS,
+  ]);
+  const puedeConsultarHistorial = hasAnyPermission(permisos, [
+    PERMISSIONS.CONSULT_HISTORY,
+    PERMISSIONS.CONSULT_INCIDENTS,
+    PERMISSIONS.CONSULT_OWN_OR_GENERAL_INCIDENTS,
+    PERMISSIONS.MANAGE_INCIDENTS,
+  ]);
+  const puedeModificarGravedad = permisos.includes(PERMISSIONS.MODIFY_SEVERITY);
+  const puedeCambiarEstado = hasAnyPermission(permisos, [
+    PERMISSIONS.CHANGE_INCIDENT_STATE,
+    PERMISSIONS.MANAGE_OPERATIONAL_STATES,
+  ]);
 
   const searchParams = useSearchParams();
   const [mensajeExito, setMensajeExito] = useState(searchParams.get('exito') === '1');
 
   useEffect(() => {
-    try {
-      const sesionGuardada = window.localStorage.getItem(SESSION_STORAGE_KEY);
-      if (sesionGuardada) {
-        const sesion = JSON.parse(sesionGuardada);
-        setFuncionarioId(sesion.funcionario?.id || '');
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    fetch(`${API_URL}/institucional/protocolos`)
+    apiFetch('/institucional/protocolos')
       .then(r => r.json())
       .then(data => { if (data.ok) setProtocolos(data.data) })
       .catch(() => {});
@@ -47,7 +52,7 @@ export default function SeguimientoIncidentePage() {
   useEffect(() => {
     const cargarIncidente = async () => {
       try {
-        const response = await fetch(`${API_URL}/incidentes/${id}`);
+        const response = await apiFetch(`/incidentes/${id}`);
         if (response.ok) {
           const resultado = await response.json();
           if (resultado.ok) {
@@ -67,9 +72,7 @@ export default function SeguimientoIncidentePage() {
   const cargarSeguimientos = async () => {
     try {
       setLoadingSeguimientos(true);
-      const response = await fetch(`${API_URL}/incidentes/${id}/seguimientos`, {
-        headers: { 'x-funcionario-id': funcionarioId || 'FUN-300FUN-3002' }
-      });
+      const response = await apiFetch(`/incidentes/${id}/seguimientos`);
       if (response.ok) {
         const data = await response.json();
         setSeguimientos(Array.isArray(data) ? data : []);
@@ -82,8 +85,12 @@ export default function SeguimientoIncidentePage() {
   };
 
   useEffect(() => {
-    if (id) cargarSeguimientos();
-  }, [id, funcionarioId]);
+    if (id && puedeConsultarHistorial) {
+      cargarSeguimientos();
+    } else {
+      setLoadingSeguimientos(false);
+    }
+  }, [id, puedeConsultarHistorial]);
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -117,11 +124,10 @@ export default function SeguimientoIncidentePage() {
     setIncidente({ ...incidente, estado: nuevoEstado });
 
     try {
-      const response = await fetch(`${API_URL}/incidentes/${incidente.id}/estado`, {
+      const response = await apiFetch(`/incidentes/${incidente.id}/estado`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
-          'x-funcionario-id': funcionarioId || 'FUN-3002'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ estado: nuevoEstado })
       });
@@ -290,27 +296,29 @@ export default function SeguimientoIncidentePage() {
               El seguimiento quedara asociado al incidente <strong>{incidente.id}</strong>.
             </span>
           </div>
-          <button
-            onClick={() => router.push(`/seguimiento/${incidente.id}/registrar`)}
-            style={{
-              padding: '10px 20px',
-              background: '#0f172a',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            <i className="bi bi-plus-circle" />
-            Registrar accion de seguimiento
-          </button>
+          {puedeRegistrarSeguimiento && (
+            <button
+              onClick={() => router.push(`/seguimiento/${incidente.id}/registrar`)}
+              style={{
+                padding: '10px 20px',
+                background: '#0f172a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}
+            >
+              <i className="bi bi-plus-circle" />
+              Registrar accion de seguimiento
+            </button>
+          )}
         </div>
       </div>
 
@@ -330,6 +338,7 @@ export default function SeguimientoIncidentePage() {
           {mensajeGravedad.texto}
         </div>
       )}
+      {puedeModificarGravedad && (
       <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 16 }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>Cambiar gravedad:</span>
         <select
@@ -344,9 +353,9 @@ export default function SeguimientoIncidentePage() {
         <button
           onClick={async () => {
             try {
-              const response = await fetch(`${API_URL}/incidentes/${incidente.id}/gravedad`, {
+              const response = await apiFetch(`/incidentes/${incidente.id}/gravedad`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'x-funcionario-id': 'FUN-3002' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ gravedad: incidente.gravedad })
               });
               if (response.ok) {
@@ -364,6 +373,7 @@ export default function SeguimientoIncidentePage() {
           Guardar cambio
         </button>
       </div>
+      )}
 
       {(() => {
         const protocolo = obtenerProtocolo(incidente.gravedad);
@@ -457,7 +467,7 @@ export default function SeguimientoIncidentePage() {
                 'Cerrado': { bg: '#e2e8f0', color: '#475569' },
               };
               const estilo = estadoColores[incidente.estado] || { bg: '#fff', color: '#0f172a' };
-              return (
+              return puedeCambiarEstado ? (
                 <select
                   value={incidente.estado}
                   onChange={(e) => actualizarEstado(e.target.value)}
@@ -478,6 +488,19 @@ export default function SeguimientoIncidentePage() {
                   <option value="En seguimiento">En seguimiento</option>
                   <option value="Cerrado">Cerrado</option>
                 </select>
+              ) : (
+                <span style={{
+                  display: 'inline-block',
+                  padding: '12px 20px',
+                  borderRadius: 10,
+                  color: estilo.color,
+                  fontWeight: 600,
+                  background: estilo.bg,
+                  minWidth: 180,
+                  textAlign: 'center'
+                }}>
+                  {incidente.estado}
+                </span>
               );
             })()}
           </div>

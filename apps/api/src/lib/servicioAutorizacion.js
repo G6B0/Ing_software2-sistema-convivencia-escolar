@@ -2,7 +2,7 @@ const { ErrorAutorizacionSistema, ErrorValidacionSistema } = require('./erroresS
 const {
   MATRIZ_ROLES_PERMISOS,
   PERMISOS,
-  TODOS_LOS_PERMISOS,
+  PERMISOS_CONFIGURABLES,
   normalizarRol,
 } = require('./rolesPermisos')
 
@@ -39,6 +39,42 @@ class ServicioAutorizacion {
     }
   }
 
+  verificarTodosLosPermisosFuncionario(funcionarioId, permisosRequeridos) {
+    const funcionario = this.servicioInstitucional.consultarFuncionario(funcionarioId)
+
+    if (!funcionario) {
+      throw new ErrorAutorizacionSistema('Funcionario no autorizado o no encontrado.')
+    }
+
+    const permisos = this.obtenerPermisosRol(funcionario.rol)
+    const requeridos = Array.isArray(permisosRequeridos)
+      ? permisosRequeridos
+      : [permisosRequeridos]
+
+    if (!requeridos.every((permiso) => permisos.includes(permiso))) {
+      throw new ErrorAutorizacionSistema('El usuario no tiene permisos suficientes.')
+    }
+
+    return {
+      funcionario,
+      permisos,
+    }
+  }
+
+  consultarPermisosFuncionario(funcionarioId) {
+    const funcionario = this.servicioInstitucional.consultarFuncionario(funcionarioId)
+
+    if (!funcionario) {
+      throw new ErrorAutorizacionSistema('Funcionario no autorizado o no encontrado.')
+    }
+
+    return {
+      funcionarioId: funcionario.id,
+      rol: funcionario.rol,
+      permisos: this.obtenerPermisosRol(funcionario.rol),
+    }
+  }
+
   consultarPermisosRol(funcionarioId, rol) {
     this.verificarPermisoFuncionario(funcionarioId, PERMISOS.GESTIONAR_ROLES_PERMISOS)
 
@@ -54,7 +90,17 @@ class ServicioAutorizacion {
     this.verificarPermisoFuncionario(funcionarioId, PERMISOS.GESTIONAR_ROLES_PERMISOS)
 
     const rolNormalizado = this.validarRolExistente(rol)
-    const permisosValidados = this.validarPermisos(permisos)
+    if (rolNormalizado === 'director') {
+      throw new ErrorValidacionSistema(
+        'El rol director debe conservar acceso total al sistema.'
+      )
+    }
+
+    const permisosValidados = this.completarPermisosInternos(
+      rolNormalizado,
+      this.validarPermisos(permisos)
+    )
+    this.validarCoherenciaPermisos(permisosValidados)
     const permisosAnteriores = this.obtenerPermisosRol(rolNormalizado)
 
     if (!this.persistenciaSistema) {
@@ -99,7 +145,9 @@ class ServicioAutorizacion {
       throw new ErrorValidacionSistema('Los permisos deben enviarse como una lista.')
     }
 
-    const permisosInvalidos = permisos.filter((permiso) => !TODOS_LOS_PERMISOS.includes(permiso))
+    const permisosInvalidos = permisos.filter(
+      (permiso) => !PERMISOS_CONFIGURABLES.includes(permiso)
+    )
 
     if (permisosInvalidos.length > 0) {
       throw new ErrorValidacionSistema(
@@ -108,6 +156,29 @@ class ServicioAutorizacion {
     }
 
     return [...new Set(permisos)]
+  }
+
+  validarCoherenciaPermisos(permisos) {
+    if (
+      permisos.includes(PERMISOS.REGISTRAR_INCIDENTES) &&
+      !permisos.includes(PERMISOS.CONSULTAR_ALUMNOS)
+    ) {
+      throw new ErrorValidacionSistema(
+        'Registrar incidentes requiere tambien el permiso de consultar alumnos.'
+      )
+    }
+  }
+
+  completarPermisosInternos(rol, permisos) {
+    if (rol !== 'administrador') {
+      return permisos
+    }
+
+    return [...new Set([
+      ...permisos,
+      PERMISOS.ACCEDER_CONFIGURACION,
+      PERMISOS.AUDITAR_CAMBIOS,
+    ])]
   }
 }
 

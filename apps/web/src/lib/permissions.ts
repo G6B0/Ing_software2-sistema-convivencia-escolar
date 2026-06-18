@@ -20,6 +20,10 @@ export const PERMISSIONS = {
 } as const;
 
 export const ALL_PERMISSIONS = Object.values(PERMISSIONS);
+export const CONFIGURABLE_PERMISSIONS: string[] = ALL_PERMISSIONS.filter(permission =>
+  permission !== PERMISSIONS.ACCESS_CONFIGURATION &&
+  permission !== PERMISSIONS.AUDIT_CHANGES
+);
 
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   profesor: [
@@ -62,8 +66,24 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   director: ALL_PERMISSIONS,
 };
 
+const DASHBOARD_PERMISSIONS = [
+  PERMISSIONS.CONSULT_INCIDENTS,
+  PERMISSIONS.CONSULT_OWN_OR_GENERAL_INCIDENTS,
+  PERMISSIONS.CONSULT_HISTORY,
+  PERMISSIONS.MANAGE_INCIDENTS,
+  PERMISSIONS.VIEW_RECURRENCE,
+  PERMISSIONS.REVIEW_REPORTS,
+  PERMISSIONS.CONSULT_REPORTS,
+];
+
 export const NAVIGATION_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'speedometer2', href: '/dashboard', permissions: [] },
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: 'speedometer2',
+    href: '/dashboard',
+    permissions: DASHBOARD_PERMISSIONS,
+  },
   {
     id: 'incidencias',
     label: 'Incidencias',
@@ -109,6 +129,13 @@ export const NAVIGATION_ITEMS = [
     ],
   },
   {
+    id: 'reincidentes',
+    label: 'Reincidentes',
+    icon: 'person-exclamation',
+    href: '/reincidentes',
+    permissions: [PERMISSIONS.VIEW_RECURRENCE],
+  },
+  {
     id: 'mensual',
     label: 'Reporte Anual',
     icon: 'calendar3',
@@ -121,6 +148,13 @@ export const NAVIGATION_ITEMS = [
     icon: 'person-gear',
     href: '/administracion/roles',
     permissions: [PERMISSIONS.MANAGE_ROLES_PERMISSIONS],
+  },
+];
+
+const ADDITIONAL_PATH_RULES = [
+  {
+    href: '/alumnos',
+    permissions: [PERMISSIONS.CONSULT_STUDENTS],
   },
 ];
 
@@ -138,7 +172,7 @@ export function hasAnyPermission(userPermissions: string[], requiredPermissions:
 }
 
 export function canAccessPath(pathname: string, userPermissions: string[]) {
-  const matchingItem = NAVIGATION_ITEMS.find(item =>
+  const matchingItem = [...NAVIGATION_ITEMS, ...ADDITIONAL_PATH_RULES].find(item =>
     pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
 

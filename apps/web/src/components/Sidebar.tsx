@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { hasAnyPermission, NAVIGATION_ITEMS } from '@/lib/permissions';
+import { apiFetch } from '@/lib/api';
+import { hasAnyPermission, NAVIGATION_ITEMS, PERMISSIONS } from '@/lib/permissions';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SESSION_STORAGE_KEY = 'sce_sesion';
 
 interface SidebarProps {
@@ -31,12 +31,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   }, []);
 
   useEffect(() => {
-    if (user.role !== 'director' || !funcionarioId) return;
+    if (!user.permissions.includes(PERMISSIONS.VIEW_ALERTS) || !funcionarioId) return;
 
     const cargarContador = () => {
-      fetch(`${API_URL}/notificaciones/contador`, {
-        headers: { 'x-funcionario-id': funcionarioId }
-      })
+      apiFetch('/notificaciones/contador')
         .then(r => r.json())
         .then(data => { if (data.ok) setNoLeidas(data.noLeidas || 0) })
         .catch(() => {});
@@ -45,13 +43,11 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     cargarContador();
     const intervalo = setInterval(cargarContador, 10000);
     return () => clearInterval(intervalo);
-  }, [funcionarioId, user.role]);
+  }, [funcionarioId, user.permissions]);
   useEffect(() => {
     if (!mostrarPanel || !funcionarioId) return;
 
-    fetch(`${API_URL}/notificaciones?limit=5&offset=0`, {
-      headers: { 'x-funcionario-id': funcionarioId }
-    })
+    apiFetch('/notificaciones?limit=5&offset=0')
       .then(r => r.json())
       .then(data => {
         if (data.ok) {
@@ -79,7 +75,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   }, [mostrarPanel]);
 
   const marcarLeida = async (notificacion: any) => {
-    await fetch(`${API_URL}/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
+    await apiFetch(`/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
     setNotificaciones(prev => prev.map(n => n.id === notificacion.id ? { ...n, leida: true } : n));
   };
 
@@ -110,7 +106,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
           <div style={{ fontSize: 11, color: '#93c5fd' }}>{user.role}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {user.role === 'director' && (
+          {user.permissions.includes(PERMISSIONS.VIEW_ALERTS) && (
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setMostrarPanel(!mostrarPanel)}
@@ -202,9 +198,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                             <button
                               onClick={() => {
                                 const nuevoOffset = offset + 5;
-                                fetch(`${API_URL}/notificaciones?limit=5&offset=${nuevoOffset}`, {
-                                  headers: { 'x-funcionario-id': funcionarioId }
-                                })
+                                apiFetch(`/notificaciones?limit=5&offset=${nuevoOffset}`)
                                   .then(r => r.json())
                                   .then(data => {
                                     if (data.ok) {

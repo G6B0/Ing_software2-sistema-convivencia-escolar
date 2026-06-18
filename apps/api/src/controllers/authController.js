@@ -1,4 +1,4 @@
-const { ErrorValidacionSistema } = require('../lib/erroresSistema')
+const { ErrorAutorizacionSistema, ErrorValidacionSistema } = require('../lib/erroresSistema')
 
 const iniciarSesion = async (req, res) => {
   try {
@@ -24,4 +24,23 @@ const iniciarSesion = async (req, res) => {
   }
 }
 
-module.exports = { iniciarSesion }
+const consultarPermisosSesion = (req, res) => {
+  try {
+    const resultado = req.app.locals.servicioAutorizacion.consultarPermisosFuncionario(
+      req.header('x-funcionario-id')
+    )
+
+    return res.status(200).json({ ok: true, data: resultado })
+  } catch (error) {
+    if (error instanceof ErrorAutorizacionSistema) {
+      return res.status(403).json({ ok: false, mensaje: error.message })
+    }
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: 'No se pudieron consultar los permisos de la sesion.',
+    })
+  }
+}
+
+module.exports = { consultarPermisosSesion, iniciarSesion }

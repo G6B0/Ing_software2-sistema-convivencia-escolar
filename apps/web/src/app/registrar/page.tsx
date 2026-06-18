@@ -5,8 +5,7 @@ import Field from '@/components/Field';
 import Btn from '@/components/Btn';
 import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
 import { useSearchParams } from 'next/navigation';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
 
 const fld = {
   padding: '9px 12px',
@@ -100,12 +99,12 @@ export default function RegistrarPage() {
       setFuncionarioSesion(null);
     }
 
-    fetch(`${API_URL}/institucional/protocolos`)
+    apiFetch('/institucional/protocolos')
       .then(r => r.json())
       .then(data => { if (data.ok) setProtocolos(data.data) })
       .catch(() => {});
 
-    fetch(`${API_URL}/institucional/cursos`)
+    apiFetch('/institucional/cursos')
       .then(r => r.json())
       .then(data => { if (data.ok) setCursos(data.data) })
       .catch(() => {});
@@ -131,7 +130,7 @@ export default function RegistrarPage() {
     setBusquedaAlumno('');
     setNuevoParticipante(p => ({ ...p, alumnoId: '', alumnoNombre: '' }));
 
-    fetch(`${API_URL}/institucional/cursos/${nuevoParticipante.curso}/alumnos`)
+    apiFetch(`/institucional/cursos/${nuevoParticipante.curso}/alumnos`)
       .then(r => r.json())
       .then(data => { if (data.ok) setAlumnosCurso(data.data) })
       .catch(() => {})
@@ -303,7 +302,7 @@ export default function RegistrarPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/incidentes`, {
+      const response = await apiFetch('/incidentes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

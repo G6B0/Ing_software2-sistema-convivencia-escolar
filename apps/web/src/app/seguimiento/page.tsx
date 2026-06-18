@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { nombresAlumnos, nombreFuncionario } from '@/lib/displayNames';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
 
 const fld = {
   padding: '9px 12px',
@@ -35,8 +34,8 @@ export default function SeguimientoPage() {
     const cargarDatos = async () => {
       try {
         const [incRes, cursosRes] = await Promise.all([
-          fetch(`${API_URL}/incidentes`),
-          fetch(`${API_URL}/institucional/cursos`)
+          apiFetch('/incidentes'),
+          apiFetch('/institucional/cursos')
         ]);
 
         const incData = await incRes.json();

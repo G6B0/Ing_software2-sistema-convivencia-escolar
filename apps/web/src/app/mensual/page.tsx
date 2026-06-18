@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import StatCard from '@/components/StatCard';
 import Table, { TableColumn } from '@/components/Table';
 import LineChart from '@/components/LineChart';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
 
 interface MesData {
   mes: string;
@@ -30,7 +29,7 @@ export default function MensualPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${API_URL}/reportes/mensual`);
+        const response = await apiFetch('/reportes/mensual');
         const result = await response.json();
         if (!result.ok) throw new Error(result.error || 'Error al cargar datos');
         setData(result.data);
