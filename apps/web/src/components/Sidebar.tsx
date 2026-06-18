@@ -21,6 +21,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [offset, setOffset] = useState(0);
   const [hayMas, setHayMas] = useState(false);
   const [total, setTotal] = useState(0);
+  const [noLeidas, setNoLeidas] = useState(0);
 
   useEffect(() => {
     try {
@@ -32,26 +33,36 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   useEffect(() => {
     if (user.role !== 'director' || !funcionarioId) return;
 
-    const cargar = () => {
-      fetch(`${API_URL}/notificaciones?limit=5&offset=0`, {
+    const cargarContador = () => {
+      fetch(`${API_URL}/notificaciones/contador`, {
         headers: { 'x-funcionario-id': funcionarioId }
       })
         .then(r => r.json())
-        .then(data => {
-          if (data.ok) {
-            setNotificaciones(data.data);
-            setTotal(data.total);
-            setHayMas(5 < data.total);
-            setOffset(0);
-          }
-        })
+        .then(data => { if (data.ok) setNoLeidas(data.noLeidas || 0) })
         .catch(() => {});
     };
 
-    cargar();
-    const intervalo = setInterval(cargar, 10000);
+    cargarContador();
+    const intervalo = setInterval(cargarContador, 10000);
     return () => clearInterval(intervalo);
   }, [funcionarioId, user.role]);
+  useEffect(() => {
+    if (!mostrarPanel || !funcionarioId) return;
+
+    fetch(`${API_URL}/notificaciones?limit=5&offset=0`, {
+      headers: { 'x-funcionario-id': funcionarioId }
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          setNotificaciones(data.data || []);
+          setTotal(data.total || 0);
+          setHayMas(5 < (data.total || 0));
+          setOffset(0);
+        }
+      })
+      .catch(() => {});
+  }, [mostrarPanel, funcionarioId]);
   
   useEffect(() => {
     if (!mostrarPanel) return;
@@ -66,8 +77,6 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     document.addEventListener('mousedown', handleClickFuera);
     return () => document.removeEventListener('mousedown', handleClickFuera);
   }, [mostrarPanel]);
-  
-  const noLeidas = (notificaciones || []).filter(n => !n.leida).length;
 
   const marcarLeida = async (notificacion: any) => {
     await fetch(`${API_URL}/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
@@ -142,11 +151,16 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                   zIndex: 1000,
                   overflow: 'hidden'
                 }}>
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Notificaciones</span>
-                    {noLeidas > 0 && (
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#ef4444' }}>{noLeidas} sin leer</span>
-                    )}
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Notificaciones</span>
+                      {noLeidas > 0 && (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#ef4444' }}>{noLeidas} sin leer</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+                      {total} {total === 1 ? 'incidente grave activo' : 'incidentes graves activos'}
+                    </div>
                   </div>
                   <div style={{ maxHeight: 360, overflowY: 'auto' }}>
                     {notificaciones.length === 0 ? (
