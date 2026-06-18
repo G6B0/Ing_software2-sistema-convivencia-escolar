@@ -14,16 +14,41 @@ interface BarChartProps {
   height?: number;
 }
 
+function wrapText(text: string, maxCharsPerLine: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if (!current) {
+      current = word;
+    } else if ((current + ' ' + word).length <= maxCharsPerLine) {
+      current += ' ' + word;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
 export default function BarChart({ data, xKey, bars, height = 220 }: BarChartProps) {
   const maxVal = Math.max(...data.map((d) => bars.reduce((s, b) => s + (Number(d[b.key]) || 0), 0)), 1);
   const barW = 38;
   const gap = 18;
   const padL = 36;
-  const padB = 28;
+  const lineH = 12;
+  const maxLines = 2;
+  const padB = 10 + maxLines * lineH;
   const padT = 12;
   const padR = 12;
-  const totalW = data.length * (barW + gap) + padL + padR;
+  const slotW = barW + gap;
+  const innerPadL = 10; // gap between y-axis and first bar
+  // ~5.5px per char at fontSize 10
+  const maxLabelChars = Math.max(3, Math.floor(slotW / 5.5));
+  const totalW = data.length * slotW + padL + innerPadL + padR;
   const chartH = height - padB - padT;
+  const labelStartY = padT + chartH + 14;
 
   return (
     <svg
@@ -44,8 +69,9 @@ export default function BarChart({ data, xKey, bars, height = 220 }: BarChartPro
         </g>
       ))}
       {data.map((d, i) => {
-        const x = padL + i * (barW + gap);
+        const x = padL + innerPadL + i * slotW;
         let stackY = padT + chartH;
+        const lines = wrapText(String(d[xKey]), maxLabelChars);
         return (
           <g key={i}>
             {bars.map((b) => {
@@ -62,8 +88,12 @@ export default function BarChart({ data, xKey, bars, height = 220 }: BarChartPro
                 />
               );
             })}
-            <text x={x + barW / 2} y={height - 7} textAnchor="middle" fontSize={10} fill="#64748b">
-              {d[xKey]}
+            <text textAnchor="middle" fontSize={10} fill="#64748b">
+              {lines.map((line, li) => (
+                <tspan key={li} x={x + barW / 2} y={labelStartY + li * lineH}>
+                  {line}
+                </tspan>
+              ))}
             </text>
           </g>
         );

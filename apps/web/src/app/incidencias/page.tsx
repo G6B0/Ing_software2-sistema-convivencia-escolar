@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Btn from '@/components/Btn';
 import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
 
@@ -22,6 +22,7 @@ const fld = {
 
 export default function IncidenciasPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [incidentes, setIncidentes] = useState<any[]>([]);
   const [loadingIncidentes, setLoadingIncidentes] = useState(false);
@@ -32,6 +33,16 @@ export default function IncidenciasPage() {
   const [filtroGravedad, setFiltroGravedad] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroCurso, setFiltroCurso] = useState('');
+  const [filtroMes, setFiltroMes] = useState('');
+  const [filtroAnio, setFiltroAnio] = useState('');
+
+  // Sincronizar filtros desde query params al montar y cuando cambien
+  useEffect(() => {
+    setFiltroGravedad(searchParams.get('gravedad') || '');
+    setFiltroEstado(searchParams.get('estado') || '');
+    setFiltroMes(searchParams.get('mes') || '');
+    setFiltroAnio(searchParams.get('anio') || '');
+  }, [searchParams]);
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -89,7 +100,14 @@ export default function IncidenciasPage() {
     const coincideCurso = !filtroCurso ||
       inc.participantes?.some((p: any) => p.curso === filtroCurso);
 
-    return coincideBusqueda && coincideGravedad && coincideEstado && coincideCurso;
+    let coincideFecha = true;
+    if (filtroMes || filtroAnio) {
+      const fecha = new Date(inc.fecha);
+      if (filtroMes) coincideFecha = coincideFecha && (fecha.getMonth() + 1) === Number(filtroMes);
+      if (filtroAnio) coincideFecha = coincideFecha && fecha.getFullYear() === Number(filtroAnio);
+    }
+
+    return coincideBusqueda && coincideGravedad && coincideEstado && coincideCurso && coincideFecha;
   });
 
   const handleIncidenteClick = (incidente: any) => {
