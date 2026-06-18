@@ -1,3 +1,4 @@
+/*
 // Importamos nuestro nuevo servicio
 const { enviarCorreo } = require('./services/emailService');
 
@@ -16,3 +17,4 @@ const hacerPrueba = async () => {
 
 // Ejecutamos la función
 hacerPrueba();
+*/
