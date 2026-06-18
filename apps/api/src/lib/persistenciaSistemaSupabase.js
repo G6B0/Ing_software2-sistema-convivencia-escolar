@@ -278,17 +278,22 @@ class PersistenciaSistemaSupabase {
       .select(`
         *,
         incidentes!incidente_id (
-          estado
+          estado,
+          gravedad
         )
       `)
       .eq('destinatario_id', destinatarioId)
       .order('leida', { ascending: true })
       .order('fecha_creacion', { ascending: false })
 
-      asegurarSinError(error, 'No se pudieron consultar las notificaciones')
+    asegurarSinError(error, 'No se pudieron consultar las notificaciones')
 
-      const filtradas = (notificaciones || [])
-      .filter(n => n.incidentes !== null && n.incidentes.estado !== 'Cerrado')
+    const filtradas = (notificaciones || [])
+      .filter(n => 
+        n.incidentes !== null && 
+        n.incidentes.estado !== 'Cerrado' && 
+        n.incidentes.gravedad === 'Grave'
+      )
 
     const total = filtradas.length
 
@@ -351,6 +356,29 @@ class PersistenciaSistemaSupabase {
       leida: notificacion.leida,
       destinatarioId: notificacion.destinatario_id,
     }
+  }
+  async contarNotificacionesNoLeidas(destinatarioId) {
+    const { data: notificaciones, error } = await this.supabase
+      .from('notificaciones')
+      .select(`
+        leida,
+        incidentes!incidente_id (
+          estado,
+          gravedad
+        )
+      `)
+      .eq('destinatario_id', destinatarioId)
+      .eq('leida', false)
+
+    asegurarSinError(error, 'No se pudo contar las notificaciones')
+
+    const activas = (notificaciones || []).filter(n =>
+      n.incidentes !== null &&
+      n.incidentes.estado !== 'Cerrado' &&
+      n.incidentes.gravedad === 'Grave'
+    )
+
+    return activas.length
   }
 
 }

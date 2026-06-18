@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { SESSION_STORAGE_KEY, SesionUsuario } from '@/components/AuthShell';
-import { ALL_PERMISSIONS } from '@/lib/permissions';
+import { apiFetch } from '@/lib/api';
+import { CONFIGURABLE_PERMISSIONS, PERMISSIONS } from '@/lib/permissions';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const ROLES = ['profesor', 'inspector', 'orientador', 'convivencia escolar', 'administrador', 'director'];
 
 const permissionNames: Record<string, string> = {
@@ -27,6 +27,10 @@ const permissionNames: Record<string, string> = {
   acceder_configuracion: 'Acceder a configuracion',
   auditar_cambios: 'Auditar cambios',
 };
+
+function filterConfigurablePermissions(permissions: string[]) {
+  return permissions.filter(permission => CONFIGURABLE_PERMISSIONS.includes(permission));
+}
 
 export default function RolesPermissionsPage() {
   const [role, setRole] = useState('profesor');
@@ -54,25 +58,40 @@ export default function RolesPermissionsPage() {
     setLoading(true);
     setMessage('');
 
-    fetch(`${API_URL}/roles/${encodeURIComponent(role)}/permisos`, {
-      headers: { 'x-funcionario-id': employeeId },
-    })
+    apiFetch(`/roles/${encodeURIComponent(role)}/permisos`)
       .then(response => response.json().then(body => ({ response, body })))
       .then(({ response, body }) => {
         if (!response.ok) throw new Error(body.mensaje || 'No se pudieron consultar los permisos.');
-        setPermissions(body.data.permisos);
-        setOfficialPermissions(body.data.permisos);
+        const configurablePermissions = filterConfigurablePermissions(body.data.permisos);
+        setPermissions(configurablePermissions);
+        setOfficialPermissions(configurablePermissions);
       })
       .catch(error => setMessage(error.message))
       .finally(() => setLoading(false));
   }, [employeeId, role]);
 
   const togglePermission = (permission: string) => {
-    setPermissions(current =>
-      current.includes(permission)
-        ? current.filter(item => item !== permission)
-        : [...current, permission]
-    );
+    setPermissions(current => {
+      if (current.includes(permission)) {
+        const updated = current.filter(item => item !== permission);
+
+        if (permission === PERMISSIONS.CONSULT_STUDENTS) {
+          return updated.filter(item => item !== PERMISSIONS.REGISTER_INCIDENTS);
+        }
+
+        return updated;
+      }
+
+      if (permission === PERMISSIONS.REGISTER_INCIDENTS) {
+        return [...new Set([
+          ...current,
+          PERMISSIONS.CONSULT_STUDENTS,
+          PERMISSIONS.REGISTER_INCIDENTS,
+        ])];
+      }
+
+      return [...current, permission];
+    });
   };
 
   const save = async () => {
@@ -80,11 +99,10 @@ export default function RolesPermissionsPage() {
     setMessage('');
 
     try {
-      const response = await fetch(`${API_URL}/roles/${encodeURIComponent(role)}/permisos`, {
+      const response = await apiFetch(`/roles/${encodeURIComponent(role)}/permisos`, {
         method: 'PUT',
         headers: {
           'content-type': 'application/json',
-          'x-funcionario-id': employeeId,
         },
         body: JSON.stringify({ permisos: permissions }),
       });
@@ -92,8 +110,9 @@ export default function RolesPermissionsPage() {
 
       if (!response.ok) throw new Error(body.mensaje || 'No se pudieron guardar los permisos.');
 
-      setPermissions(body.data.permisos);
-      setOfficialPermissions(body.data.permisos);
+      const configurablePermissions = filterConfigurablePermissions(body.data.permisos);
+      setPermissions(configurablePermissions);
+      setOfficialPermissions(configurablePermissions);
       setMessage('Permisos actualizados correctamente.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No se pudieron guardar los permisos.');
@@ -129,8 +148,8 @@ export default function RolesPermissionsPage() {
         <button
           type="button"
           onClick={save}
-          disabled={saving || loading || !hasChanges}
-          style={{ padding: '10px 18px', borderRadius: 6, border: 'none', background: '#003087', color: '#fff', fontWeight: 700, cursor: saving || loading || !hasChanges ? 'not-allowed' : 'pointer', opacity: saving || loading || !hasChanges ? 0.55 : 1 }}
+          disabled={saving || loading || !hasChanges || role === 'director'}
+          style={{ padding: '10px 18px', borderRadius: 6, border: 'none', background: '#003087', color: '#fff', fontWeight: 700, cursor: saving || loading || !hasChanges || role === 'director' ? 'not-allowed' : 'pointer', opacity: saving || loading || !hasChanges || role === 'director' ? 0.55 : 1 }}
         >
           {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
@@ -144,7 +163,7 @@ export default function RolesPermissionsPage() {
 
       <section aria-label="Permisos del rol">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
-          {ALL_PERMISSIONS.map(permission => {
+          {CONFIGURABLE_PERMISSIONS.map(permission => {
             const checked = permissions.includes(permission);
             return (
               <label
@@ -154,7 +173,7 @@ export default function RolesPermissionsPage() {
                 <input
                   type="checkbox"
                   checked={checked}
-                  disabled={loading}
+                  disabled={loading || role === 'director'}
                   onChange={() => togglePermission(permission)}
                 />
                 <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400 }}>

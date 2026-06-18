@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Btn from '@/components/Btn';
 import { nombreAlumno, nombreFuncionario } from '@/lib/displayNames';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
+import { useSessionPermissions } from '@/hooks/useSessionPermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 const fld = {
   padding: '9px 12px',
@@ -22,16 +23,29 @@ const fld = {
 
 export default function IncidenciasPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [incidentes, setIncidentes] = useState<any[]>([]);
   const [loadingIncidentes, setLoadingIncidentes] = useState(false);
   const [cursos, setCursos] = useState<string[]>([]);
+  const permisos = useSessionPermissions();
+  const puedeRegistrar = permisos.includes(PERMISSIONS.REGISTER_INCIDENTS);
 
   // Filtros
   const [busqueda, setBusqueda] = useState('');
   const [filtroGravedad, setFiltroGravedad] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroCurso, setFiltroCurso] = useState('');
+  const [filtroMes, setFiltroMes] = useState('');
+  const [filtroAnio, setFiltroAnio] = useState('');
+
+  // Sincronizar filtros desde query params al montar y cuando cambien
+  useEffect(() => {
+    setFiltroGravedad(searchParams.get('gravedad') || '');
+    setFiltroEstado(searchParams.get('estado') || '');
+    setFiltroMes(searchParams.get('mes') || '');
+    setFiltroAnio(searchParams.get('anio') || '');
+  }, [searchParams]);
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -53,8 +67,8 @@ export default function IncidenciasPage() {
       setLoadingIncidentes(true);
       try {
         const [incRes, cursosRes] = await Promise.all([
-          fetch(`${API_URL}/incidentes`),
-          fetch(`${API_URL}/institucional/cursos`)
+          apiFetch('/incidentes'),
+          apiFetch('/institucional/cursos')
         ]);
 
         const incData = await incRes.json();
@@ -89,7 +103,14 @@ export default function IncidenciasPage() {
     const coincideCurso = !filtroCurso ||
       inc.participantes?.some((p: any) => p.curso === filtroCurso);
 
-    return coincideBusqueda && coincideGravedad && coincideEstado && coincideCurso;
+    let coincideFecha = true;
+    if (filtroMes || filtroAnio) {
+      const fecha = new Date(inc.fecha);
+      if (filtroMes) coincideFecha = coincideFecha && (fecha.getMonth() + 1) === Number(filtroMes);
+      if (filtroAnio) coincideFecha = coincideFecha && fecha.getFullYear() === Number(filtroAnio);
+    }
+
+    return coincideBusqueda && coincideGravedad && coincideEstado && coincideCurso && coincideFecha;
   });
 
   const handleIncidenteClick = (incidente: any) => {
@@ -119,9 +140,11 @@ export default function IncidenciasPage() {
             {incidentesFiltrados.length} de {incidentes.length} registros
           </p>
         </div>
-        <Btn onClick={() => router.push('/registrar')}>
-          <i className="bi bi-plus-lg" /> Registrar incidencia
-        </Btn>
+        {puedeRegistrar && (
+          <Btn onClick={() => router.push('/registrar')}>
+            <i className="bi bi-plus-lg" /> Registrar incidencia
+          </Btn>
+        )}
       </div>
 
       {/* Filtros */}

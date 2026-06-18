@@ -6,6 +6,10 @@ const { PersistenciaSistemaMemoria } = require('../src/lib/persistenciaSistema')
 const ServicioIncidentes = require('../src/lib/servicioIncidentes')
 const ServicioInstitucional = require('../src/lib/servicioInstitucional')
 
+const OPCIONES_ADMINISTRADOR = {
+  headers: { 'x-funcionario-id': 'FUN-3005' },
+}
+
 function crearAppConIncidentes(incidentesData = []) {
   const persistenciaSistema = new PersistenciaSistemaMemoria()
   const servicioInstitucional = new ServicioInstitucional()
@@ -59,7 +63,7 @@ test('US07 T1.1: GET /reportes/dashboard retorna status 200 y estructura { ok, d
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/dashboard`)
+    const res = await fetch(`${baseUrl}/reportes/dashboard`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     assert.equal(res.status, 200)
@@ -86,7 +90,7 @@ test('US07 T1.2: GET /reportes/dashboard → kpis contiene incidenciasMes, grave
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/dashboard`)
+    const res = await fetch(`${baseUrl}/reportes/dashboard`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     const { kpis } = body.data
@@ -123,7 +127,7 @@ test('US07 T1.3: GET /reportes/dashboard → ultimasIncidencias retorna maximo 5
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/dashboard`)
+    const res = await fetch(`${baseUrl}/reportes/dashboard`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     const { ultimasIncidencias } = body.data
@@ -155,7 +159,7 @@ test('US07 T1.4: GET /reportes/dashboard → distribucionGravedad contiene exact
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/dashboard`)
+    const res = await fetch(`${baseUrl}/reportes/dashboard`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     const { distribucionGravedad } = body.data
@@ -190,7 +194,7 @@ test('US07 T1.5: GET /reportes/ranking-cursos retorna status 200 y un array de c
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/ranking-cursos`)
+    const res = await fetch(`${baseUrl}/reportes/ranking-cursos`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     assert.equal(res.status, 200)
@@ -220,7 +224,7 @@ test('US07 T1.6: GET /reportes/ranking-cursos → cada curso contiene curso, tot
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/ranking-cursos`)
+    const res = await fetch(`${baseUrl}/reportes/ranking-cursos`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     body.data.forEach((curso) => {
@@ -250,7 +254,7 @@ test('US07 T1.7: GET /reportes/mensual retorna status 200 y un array de meses co
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/mensual`)
+    const res = await fetch(`${baseUrl}/reportes/mensual`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     assert.equal(res.status, 200)
@@ -284,7 +288,7 @@ test('US07 T1.8: GET /reportes/mensual → los meses estan ordenados cronologica
   const { server, baseUrl } = await iniciarServidor(app)
 
   try {
-    const res = await fetch(`${baseUrl}/reportes/mensual`)
+    const res = await fetch(`${baseUrl}/reportes/mensual`, OPCIONES_ADMINISTRADOR)
     const body = await res.json()
 
     const MESES_ORDEN = [
@@ -323,21 +327,21 @@ test('US07 T1.9: Los 3 endpoints retornan { ok: false, error } con status 500 an
 
   try {
     // Dashboard
-    const resDash = await fetch(`${baseUrl}/reportes/dashboard`)
+    const resDash = await fetch(`${baseUrl}/reportes/dashboard`, OPCIONES_ADMINISTRADOR)
     const bodyDash = await resDash.json()
     assert.equal(resDash.status, 500)
     assert.equal(bodyDash.ok, false)
     assert.ok(bodyDash.error)
 
     // Ranking cursos
-    const resRanking = await fetch(`${baseUrl}/reportes/ranking-cursos`)
+    const resRanking = await fetch(`${baseUrl}/reportes/ranking-cursos`, OPCIONES_ADMINISTRADOR)
     const bodyRanking = await resRanking.json()
     assert.equal(resRanking.status, 500)
     assert.equal(bodyRanking.ok, false)
     assert.ok(bodyRanking.error)
 
     // Mensual
-    const resMensual = await fetch(`${baseUrl}/reportes/mensual`)
+    const resMensual = await fetch(`${baseUrl}/reportes/mensual`, OPCIONES_ADMINISTRADOR)
     const bodyMensual = await resMensual.json()
     assert.equal(resMensual.status, 500)
     assert.equal(bodyMensual.ok, false)

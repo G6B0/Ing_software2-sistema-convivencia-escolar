@@ -21,6 +21,14 @@ const PERMISOS = Object.freeze({
 
 const TODOS_LOS_PERMISOS = Object.freeze(Object.values(PERMISOS))
 
+const PERMISOS_CONFIGURABLES = Object.freeze(
+  TODOS_LOS_PERMISOS.filter(
+    (permiso) =>
+      permiso !== PERMISOS.ACCEDER_CONFIGURACION &&
+      permiso !== PERMISOS.AUDITAR_CAMBIOS
+  )
+)
+
 const MATRIZ_ROLES_PERMISOS = Object.freeze({
   profesor: Object.freeze([
     PERMISOS.CONSULTAR_ALUMNOS,
@@ -81,6 +89,7 @@ function rolTienePermiso(rol, permiso) {
 module.exports = {
   MATRIZ_ROLES_PERMISOS,
   PERMISOS,
+  PERMISOS_CONFIGURABLES,
   TODOS_LOS_PERMISOS,
   listarRoles,
   normalizarRol,

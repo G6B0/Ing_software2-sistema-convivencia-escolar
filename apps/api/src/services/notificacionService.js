@@ -29,7 +29,7 @@ const notificarApoderado = async (incidente, idAlumno, supabase) => {
       }
     }
 
-    // ESTRATEGIA 2: Buscar en Apoderados directamente por el campo 'alumnoId'
+    // ESTRATEGIA 2 (Salvavidas definitivo): Buscar en Apoderados directamente por el campo 'alumnoId'
     if (!correoDestino) {
       const apoderadoDirecto = datosInstitucionales.apoderados.find(
         ap => String(ap.alumnoId).trim().toUpperCase() === idLimpio.toUpperCase()
@@ -91,4 +91,4 @@ const notificarApoderado = async (incidente, idAlumno, supabase) => {
   }
 };
 
-module.exports = { notificarApoderado };                                                                  
+module.exports = { notificarApoderado };

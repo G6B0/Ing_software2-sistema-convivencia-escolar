@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import StatCard from '@/components/StatCard';
 import Table, { TableColumn } from '@/components/Table';
 import LineChart from '@/components/LineChart';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
 
 interface MesData {
   mes: string;
@@ -30,7 +29,7 @@ export default function MensualPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${API_URL}/reportes/mensual`);
+        const response = await apiFetch('/reportes/mensual');
         const result = await response.json();
         if (!result.ok) throw new Error(result.error || 'Error al cargar datos');
         setData(result.data);
@@ -47,7 +46,7 @@ export default function MensualPage() {
     return (
       <div style={{ padding: '28px 32px', textAlign: 'center' }}>
         <i className="bi bi-arrow-repeat" style={{ fontSize: 24, animation: 'spin 0.9s linear infinite' }} />
-        <p style={{ marginTop: 12, color: '#64748b' }}>Cargando reporte mensual...</p>
+        <p style={{ marginTop: 12, color: '#64748b' }}>Cargando reporte anual...</p>
       </div>
     );
   }
@@ -55,7 +54,7 @@ export default function MensualPage() {
   if (error) {
     return (
       <div style={{ padding: '28px 32px' }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Reporte mensual</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Reporte anual</h1>
         <p style={{ margin: '4px 0 24px', fontSize: 14, color: '#64748b' }}>Evolución de incidencias registradas</p>
         <div style={{
           padding: '16px 20px',
@@ -92,7 +91,7 @@ export default function MensualPage() {
   return (
     <div style={{ padding: '28px 32px' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Reporte mensual</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Reporte anual</h1>
         <p style={{ margin: '4px 0 0', fontSize: 14, color: '#64748b' }}>
           Evolución de incidencias registradas{rango ? ` — ${rango}` : ''}
         </p>

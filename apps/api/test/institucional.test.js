@@ -187,27 +187,40 @@ test('API institucional: expone consultas reales de alumnos, apoderados y funcio
     const { port } = server.address()
     const baseUrl = `http://127.0.0.1:${port}`
 
-    const respuestaAlumno = await fetch(`${baseUrl}/institucional/alumnos/ALU-1001`)
+    const opcionesProfesor = { headers: { 'x-funcionario-id': 'FUN-3001' } }
+    const opcionesAdministrador = { headers: { 'x-funcionario-id': 'FUN-3005' } }
+
+    const respuestaAlumno = await fetch(
+      `${baseUrl}/institucional/alumnos/ALU-1001`,
+      opcionesProfesor
+    )
     const alumno = await respuestaAlumno.json()
 
     assert.equal(respuestaAlumno.status, 200)
     assert.equal(alumno.data.nombre, 'Camila Rojas')
 
     const respuestaApoderados = await fetch(
-      `${baseUrl}/institucional/alumnos/ALU-1001/apoderados`
+      `${baseUrl}/institucional/alumnos/ALU-1001/apoderados`,
+      opcionesProfesor
     )
     const apoderados = await respuestaApoderados.json()
 
     assert.equal(respuestaApoderados.status, 200)
     assert.equal(apoderados.data.length, 2)
 
-    const respuestaFuncionario = await fetch(`${baseUrl}/institucional/funcionarios/FUN-3001`)
+    const respuestaFuncionario = await fetch(
+      `${baseUrl}/institucional/funcionarios/FUN-3001`,
+      opcionesAdministrador
+    )
     const funcionario = await respuestaFuncionario.json()
 
     assert.equal(respuestaFuncionario.status, 200)
     assert.equal(funcionario.data.rol, 'profesor')
 
-    const respuestaNoEncontrada = await fetch(`${baseUrl}/institucional/alumnos/ALU-9999`)
+    const respuestaNoEncontrada = await fetch(
+      `${baseUrl}/institucional/alumnos/ALU-9999`,
+      opcionesProfesor
+    )
     const noEncontrada = await respuestaNoEncontrada.json()
 
     assert.equal(respuestaNoEncontrada.status, 404)

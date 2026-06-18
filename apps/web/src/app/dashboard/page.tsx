@@ -9,8 +9,9 @@ import LineChart from '@/components/LineChart';
 import DonutChart from '@/components/DonutChart';
 import Badge from '@/components/Badge';
 import Btn from '@/components/Btn';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiFetch } from '@/lib/api';
+import { useSessionPermissions } from '@/hooks/useSessionPermissions';
+import { hasAnyPermission, PERMISSIONS } from '@/lib/permissions';
 
 interface DashboardData {
   kpis: {
@@ -35,6 +36,20 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const permisos = useSessionPermissions();
+  const puedeRegistrar = permisos.includes(PERMISSIONS.REGISTER_INCIDENTS);
+  const puedeVerSeguimiento = hasAnyPermission(permisos, [
+    PERMISSIONS.CONSULT_HISTORY,
+    PERMISSIONS.REGISTER_FOLLOWUPS,
+    PERMISSIONS.REGISTER_BASIC_FOLLOWUPS,
+    PERMISSIONS.CONSULT_INCIDENTS,
+    PERMISSIONS.CONSULT_OWN_OR_GENERAL_INCIDENTS,
+    PERMISSIONS.MANAGE_INCIDENTS,
+  ]);
+  const puedeVerReportes = hasAnyPermission(permisos, [
+    PERMISSIONS.REVIEW_REPORTS,
+    PERMISSIONS.CONSULT_REPORTS,
+  ]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [mensualData, setMensualData] = useState<Array<{ mes: string; total: number; leve: number; moderado: number; grave: number }>>([]);
   const [loading, setLoading] = useState(true);
@@ -44,8 +59,8 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         const [dashRes, mensualRes] = await Promise.all([
-          fetch(`${API_URL}/reportes/dashboard`),
-          fetch(`${API_URL}/reportes/mensual`),
+          apiFetch('/reportes/dashboard'),
+          apiFetch('/reportes/mensual'),
         ]);
         const dashResult = await dashRes.json();
         const mensualResult = await mensualRes.json();
@@ -168,15 +183,21 @@ export default function DashboardPage() {
 
       {/* Quick action buttons */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-        <Btn onClick={() => router.push('/registrar')}>
-          <i className="bi bi-plus-lg" /> Nueva incidencia
-        </Btn>
-        <Btn onClick={() => router.push('/seguimiento')} variant="secondary">
-          <i className="bi bi-list-check" /> Ver seguimiento
-        </Btn>
-        <Btn onClick={() => router.push('/mensual')} variant="secondary">
-          <i className="bi bi-calendar3" /> Reporte mensual
-        </Btn>
+        {puedeRegistrar && (
+          <Btn onClick={() => router.push('/registrar')}>
+            <i className="bi bi-plus-lg" /> Nueva incidencia
+          </Btn>
+        )}
+        {puedeVerSeguimiento && (
+          <Btn onClick={() => router.push('/seguimiento')} variant="secondary">
+            <i className="bi bi-list-check" /> Ver seguimiento
+          </Btn>
+        )}
+        {puedeVerReportes && (
+          <Btn onClick={() => router.push('/mensual')} variant="secondary">
+            <i className="bi bi-calendar3" /> Reporte anual
+          </Btn>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -186,24 +207,31 @@ export default function DashboardPage() {
           value={kpis.incidenciasMes}
           icon="calendar-check"
           color="#003087"
+          onClick={() => {
+            const ahora = new Date();
+            router.push(`/incidencias?mes=${ahora.getMonth() + 1}&anio=${ahora.getFullYear()}`);
+          }}
         />
         <StatCard
           label="Casos graves"
           value={kpis.graves}
           icon="exclamation-triangle"
           color="#991b1b"
+          onClick={() => router.push('/incidencias?gravedad=Grave')}
         />
         <StatCard
           label="En seguimiento"
           value={kpis.enSeguimiento}
           icon="arrow-repeat"
           color="#7c3aed"
+          onClick={() => router.push(`/incidencias?estado=${encodeURIComponent('En seguimiento')}`)}
         />
         <StatCard
           label="Alumnos reincidentes"
           value={kpis.reincidentes}
           icon="person-exclamation"
           color="#92400e"
+          onClick={() => router.push('/reincidentes')}
         />
       </div>
 
@@ -219,7 +247,7 @@ export default function DashboardPage() {
               onClick={() => router.push('/mensual')}
               style={{ fontSize: 13, color: '#003087', cursor: 'pointer', textDecoration: 'none', fontWeight: 600 }}
             >
-              Ver Reporte Mensual →
+              Ver Reporte Anual →
             </a>
           </div>
           {evolucionData.length > 0 ? (
