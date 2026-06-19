@@ -144,23 +144,21 @@ async function obtenerReporteMensual(req, res) {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
     ]
 
-    // Agrupar por año-mes
-    const mesMap = {}
+    const anioActual = new Date().getFullYear()
+
+    // Generar estructura base de 12 meses con totales en 0
+    const reporte = MESES.map((mes) => ({ mes, total: 0, leve: 0, moderado: 0, grave: 0 }))
+
+    // Mezclar con los datos reales del año actual
     incidentes.forEach((i) => {
       const fecha = new Date(i.fecha)
-      const clave = `${fecha.getFullYear()}-${String(fecha.getMonth()).padStart(2, '0')}`
-      if (!mesMap[clave]) {
-        mesMap[clave] = { mes: MESES[fecha.getMonth()], total: 0, leve: 0, moderado: 0, grave: 0, _orden: clave }
-      }
-      mesMap[clave].total += 1
-      if (i.gravedad === 'Leve') mesMap[clave].leve += 1
-      else if (i.gravedad === 'Moderado') mesMap[clave].moderado += 1
-      else if (i.gravedad === 'Grave') mesMap[clave].grave += 1
+      if (fecha.getFullYear() !== anioActual) return
+      const mesIndex = fecha.getMonth()
+      reporte[mesIndex].total += 1
+      if (i.gravedad === 'Leve') reporte[mesIndex].leve += 1
+      else if (i.gravedad === 'Moderado') reporte[mesIndex].moderado += 1
+      else if (i.gravedad === 'Grave') reporte[mesIndex].grave += 1
     })
-
-    const reporte = Object.values(mesMap)
-      .sort((a, b) => a._orden.localeCompare(b._orden))
-      .map(({ _orden, ...rest }) => rest)
 
     return res.json({ ok: true, data: reporte })
   } catch (error) {
