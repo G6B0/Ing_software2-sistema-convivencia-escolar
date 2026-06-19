@@ -279,7 +279,8 @@ class PersistenciaSistemaSupabase {
         *,
         incidentes!incidente_id (
           estado,
-          gravedad
+          gravedad,
+          descripcion
         )
       `)
       .eq('destinatario_id', destinatarioId)
@@ -308,6 +309,7 @@ class PersistenciaSistemaSupabase {
           fechaCreacion: n.fecha_creacion,
           leida: n.leida,
           destinatarioId: n.destinatario_id,
+          descripcion: n.incidentes?.descripcion || null,
         }))
     }
   }

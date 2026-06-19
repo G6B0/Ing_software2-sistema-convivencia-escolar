@@ -22,6 +22,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [hayMas, setHayMas] = useState(false);
   const [total, setTotal] = useState(0);
   const [noLeidas, setNoLeidas] = useState(0);
+  const [hover, setHover] = useState<string | null>(null);
+  const [detalleHover, setDetalleHover] = useState<any | null>(null);
 
   useEffect(() => {
     try {
@@ -82,6 +84,14 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const items = NAVIGATION_ITEMS.filter(item =>
     hasAnyPermission(user.permissions, item.permissions)
   );
+
+  const cargarDetalle = async (incidenteId: string) => {
+  try {
+    const response = await apiFetch(`/incidentes/${incidenteId}`);
+    const data = await response.json();
+    if (data.ok) setDetalleHover(data.data);
+  } catch {}
+};
 
   const initials = user.name.split(' ').slice(0, 2).map(n => n[0]).join('');
 
@@ -171,7 +181,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                               key={n.id}
                               href={`/seguimiento/${n.incidenteId}`}
                               onClick={() => { marcarLeida(n); setMostrarPanel(false); }}
+                              onMouseEnter={() => { setHover(n.id); cargarDetalle(n.incidenteId); }}
+                              onMouseLeave={() => { setHover(null); setDetalleHover(null); }}
                               style={{
+                                position: 'relative',
                                 display: 'block',
                                 padding: '14px 20px',
                                 borderBottom: '1px solid #f1f5f9',
@@ -192,6 +205,51 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', marginLeft: 'auto', flexShrink: 0, marginTop: 4 }} />
                                 )}
                               </div>
+                              {hover === n.id && detalleHover && (
+                                <div style={{
+                                  position: 'fixed',
+                                  left: 548,
+                                  background: '#0f172a',
+                                  color: '#fff',
+                                  borderRadius: 10,
+                                  padding: '12px 16px',
+                                  width: 260,
+                                  zIndex: 1100,
+                                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                                  pointerEvents: 'none'
+                                }}>
+                                  {detalleHover.participantes?.slice(0, 2).map((p: any, i: number) => (
+                                    <div key={i} style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span>{p.nombreAlumno || p.alumnoInstitucionalId}</span>
+                                      {p.curso && <span style={{ fontWeight: 400, color: '#94a3b8' }}>{p.curso}</span>}
+                                      {p.rolEnIncidente && (() => {
+                                        const roles: Record<string, { bg: string; color: string }> = {
+                                          'Agresor': { bg: '#fee2e2', color: '#991b1b' },
+                                          'Victima': { bg: '#dbeafe', color: '#1e40af' },
+                                          'Testigo': { bg: '#f3e8ff', color: '#6b21a8' },
+                                          'Involucrado': { bg: '#fef3c7', color: '#92400e' },
+                                        };
+                                        const estilo = roles[p.rolEnIncidente] || { bg: '#f1f5f9', color: '#475569' };
+                                        return (
+                                          <span style={{
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            padding: '1px 6px',
+                                            borderRadius: 6,
+                                            background: estilo.bg,
+                                            color: estilo.color
+                                          }}>
+                                            {p.rolEnIncidente}
+                                          </span>
+                                        );
+                                      })()}
+                                    </div>
+                                  ))}
+                                  <p style={{ margin: '6px 0 0', fontSize: 12, color: '#cbd5e1', lineHeight: 1.5 }}>
+                                    {detalleHover.descripcion?.slice(0, 80) || 'Sin descripción'}
+                                  </p>
+                                </div>
+                              )}
                             </Link>
                           ))}
                           {hayMas && (
