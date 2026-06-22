@@ -45,6 +45,7 @@ export default function IncidenciasPage() {
     setFiltroEstado(searchParams.get('estado') || '');
     setFiltroMes(searchParams.get('mes') || '');
     setFiltroAnio(searchParams.get('anio') || '');
+    setFiltroCurso(searchParams.get('curso') || '');
   }, [searchParams]);
 
   const formatearFecha = (fecha: string) => {
