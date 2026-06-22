@@ -32,6 +32,20 @@ export default function IncidenciasPage() {
   const [filtroGravedad, setFiltroGravedad] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroCurso, setFiltroCurso] = useState('');
+<<<<<<< Updated upstream
+=======
+  const [filtroMes, setFiltroMes] = useState('');
+  const [filtroAnio, setFiltroAnio] = useState('');
+
+  // Sincronizar filtros desde query params al montar y cuando cambien
+  useEffect(() => {
+    setFiltroGravedad(searchParams.get('gravedad') || '');
+    setFiltroEstado(searchParams.get('estado') || '');
+    setFiltroMes(searchParams.get('mes') || '');
+    setFiltroAnio(searchParams.get('anio') || '');
+    setFiltroCurso(searchParams.get('curso') || '');
+  }, [searchParams]);
+>>>>>>> Stashed changes
 
   const formatearFecha = (fecha: string) => {
     try {
