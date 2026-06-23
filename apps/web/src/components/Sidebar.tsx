@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { hasAnyPermission, NAVIGATION_ITEMS, PERMISSIONS } from '@/lib/permissions';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const SESSION_STORAGE_KEY = 'sce_sesion';
 
@@ -198,7 +200,12 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                                 <div>
                                   <div style={{ fontSize: 13, fontWeight: n.leida ? 400 : 600, color: '#0f172a' }}>{n.titulo}</div>
                                   <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-                                    {new Date(n.fechaCreacion).toLocaleDateString('es-CL')}
+                                    {n.fechaCreacion &&
+                                      formatDistanceToNow(new Date(n.fechaCreacion), {
+                                        addSuffix: true,
+                                        locale: es
+                                      })
+                                    }
                                   </div>
                                 </div>
                                 {!n.leida && (
