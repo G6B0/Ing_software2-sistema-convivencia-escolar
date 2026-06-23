@@ -1,11 +1,12 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { canAccessPath, getPermissions } from '@/lib/permissions';
 import {
   apiFetch,
+  getStoredSession,
   SESSION_STORAGE_KEY,
   SESSION_UPDATED_EVENT,
 } from '@/lib/api';
@@ -29,14 +30,25 @@ interface AuthShellProps {
   children: ReactNode;
 }
 
+function samePermissions(currentPermissions: string[] = [], nextPermissions: string[] = []) {
+  return (
+    currentPermissions.length === nextPermissions.length &&
+    currentPermissions.every(permission => nextPermissions.includes(permission))
+  );
+}
+
 export default function AuthShell({ children }: AuthShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
   const [validandoSesion, setValidandoSesion] = useState(true);
-  const permisos = sesion
-    ? getPermissions(sesion.funcionario.rol, sesion.funcionario.permisos)
-    : [];
+  const [sincronizandoPermisos, setSincronizandoPermisos] = useState(false);
+  const permisos = useMemo(
+    () => sesion
+      ? getPermissions(sesion.funcionario.rol, sesion.funcionario.permisos)
+      : [],
+    [sesion]
+  );
   const funcionarioSesionId = sesion?.funcionario.id;
 
   useEffect(() => {
@@ -52,10 +64,12 @@ export default function AuthShell({ children }: AuthShellProps) {
 
   useEffect(() => {
     if (validandoSesion || !funcionarioSesionId || pathname === '/login') {
+      setSincronizandoPermisos(false);
       return;
     }
 
     let activo = true;
+    setSincronizandoPermisos(true);
 
     apiFetch('/auth/permisos')
       .then(response => response.json().then(body => ({ response, body })))
@@ -64,35 +78,34 @@ export default function AuthShell({ children }: AuthShellProps) {
           return;
         }
 
-        setSesion(actual => {
-          if (!actual) {
-            return actual;
-          }
+        const sesionActual = getStoredSession() as SesionUsuario | null;
+        if (!sesionActual || sesionActual.funcionario.id !== funcionarioSesionId) {
+          return;
+        }
 
-          const permisosActuales = actual.funcionario.permisos || [];
-          const permisosNuevos = body.data.permisos as string[];
+        const permisosNuevos = body.data.permisos as string[];
+        if (samePermissions(sesionActual.funcionario.permisos, permisosNuevos)) {
+          return;
+        }
 
-          if (
-            permisosActuales.length === permisosNuevos.length &&
-            permisosActuales.every(permission => permisosNuevos.includes(permission))
-          ) {
-            return actual;
-          }
+        const sesionActualizada = {
+          ...sesionActual,
+          funcionario: {
+            ...sesionActual.funcionario,
+            permisos: permisosNuevos,
+          },
+        };
 
-          const sesionActualizada = {
-            ...actual,
-            funcionario: {
-              ...actual.funcionario,
-              permisos: permisosNuevos,
-            },
-          };
-
-          window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sesionActualizada));
-          window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
-          return sesionActualizada;
-        });
+        window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sesionActualizada));
+        window.dispatchEvent(new Event(SESSION_UPDATED_EVENT));
+        setSesion(sesionActualizada);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (activo) {
+          setSincronizandoPermisos(false);
+        }
+      });
 
     return () => {
       activo = false;
@@ -100,7 +113,7 @@ export default function AuthShell({ children }: AuthShellProps) {
   }, [funcionarioSesionId, pathname, validandoSesion]);
 
   useEffect(() => {
-    if (validandoSesion) {
+    if (validandoSesion || sincronizandoPermisos) {
       return;
     }
 
@@ -117,7 +130,7 @@ export default function AuthShell({ children }: AuthShellProps) {
     if (sesion && !canAccessPath(pathname, permisos)) {
       router.replace('/dashboard');
     }
-  }, [pathname, permisos, router, sesion, validandoSesion]);
+  }, [pathname, permisos, router, sesion, sincronizandoPermisos, validandoSesion]);
 
   const cerrarSesion = () => {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -125,7 +138,7 @@ export default function AuthShell({ children }: AuthShellProps) {
     router.replace('/login');
   };
 
-  if (validandoSesion) {
+  if (validandoSesion || sincronizandoPermisos) {
     return null;
   }
 

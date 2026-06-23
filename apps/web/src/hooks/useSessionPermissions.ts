@@ -9,7 +9,13 @@ import {
 import { getPermissions } from '@/lib/permissions';
 
 export function useSessionPermissions() {
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>(() => {
+    const session = getStoredSession();
+    return getPermissions(
+      session?.funcionario?.rol || '',
+      session?.funcionario?.permisos
+    );
+  });
 
   useEffect(() => {
     const updatePermissions = () => {
