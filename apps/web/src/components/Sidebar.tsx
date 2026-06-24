@@ -26,6 +26,16 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [noLeidas, setNoLeidas] = useState(0);
   const [hover, setHover] = useState<string | null>(null);
   const [detalleHover, setDetalleHover] = useState<any | null>(null);
+  const [animarCampanita, setAnimarCampanita] = useState(false);
+  const [prevNoLeidas, setPrevNoLeidas] = useState(0);
+
+    useEffect(() => {
+    if (noLeidas > prevNoLeidas && prevNoLeidas !== 0) {
+      setAnimarCampanita(true);
+      setTimeout(() => setAnimarCampanita(false), 1000);
+    }
+    setPrevNoLeidas(noLeidas);
+  }, [noLeidas]);
 
   useEffect(() => {
     try {
@@ -124,7 +134,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                 onClick={() => setMostrarPanel(!mostrarPanel)}
                 style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
               >
-                <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />
+                <i className={`bi bi-bell-fill ${animarCampanita ? 'campanita-shake' : ''}`}
+                style={{ fontSize: 16 }}  />
                 {noLeidas > 0 && (
                   <span style={{
                     position: 'absolute',
