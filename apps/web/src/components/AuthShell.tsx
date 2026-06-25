@@ -138,7 +138,7 @@ export default function AuthShell({ children }: AuthShellProps) {
     router.replace('/login');
   };
 
-  if (validandoSesion || sincronizandoPermisos) {
+  if (validandoSesion) {
     return null;
   }
 
@@ -150,7 +150,7 @@ export default function AuthShell({ children }: AuthShellProps) {
     return null;
   }
 
-  if (!canAccessPath(pathname, permisos)) {
+  if (!sincronizandoPermisos && !canAccessPath(pathname, permisos)) {
     return null;
   }
 
