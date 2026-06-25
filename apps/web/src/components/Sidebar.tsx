@@ -87,6 +87,14 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     document.addEventListener('mousedown', handleClickFuera);
     return () => document.removeEventListener('mousedown', handleClickFuera);
   }, [mostrarPanel]);
+  useEffect(() => {
+    if (noLeidas > prevNoLeidas && prevNoLeidas !== 0) {
+      setAnimarCampanita(true);
+      reproducirSonido();
+      setTimeout(() => setAnimarCampanita(false), 1000);
+    }
+    setPrevNoLeidas(noLeidas);
+  }, [noLeidas]);
 
   const marcarLeida = async (notificacion: any) => {
     await apiFetch(`/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
@@ -102,6 +110,26 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     const response = await apiFetch(`/incidentes/${incidenteId}`);
     const data = await response.json();
     if (data.ok) setDetalleHover(data.data);
+  } catch {}
+  };
+
+  const reproducirSonido = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    oscillator.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
   } catch {}
 };
 
