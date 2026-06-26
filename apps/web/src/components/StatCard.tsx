@@ -6,19 +6,21 @@ interface StatCardProps {
   sub?: ReactNode;
   icon?: string;
   color?: string;
+  bg?: string;
+  borderColor?: string;
   onClick?: () => void;
   delta?: number | null; // <--- NUEVA PROP (T11)
 }
 
 const hoverClass = 'stat-card-interactive';
 
-export default function StatCard({ label, value, sub, icon, color = '#003087', onClick, delta }: StatCardProps) {
+export default function StatCard({ label, value, sub, icon, color = '#003087', bg, borderColor, onClick, delta }: StatCardProps) {
   const baseStyle: React.CSSProperties = {
-    background: '#fff',
+    background: bg || '#fff',
     borderRadius: 12,
     padding: '20px 22px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-    border: '1px solid #e2e8f0',
+    border: `1px solid ${borderColor || '#e2e8f0'}`,
     ...(onClick ? { cursor: 'pointer', transition: 'box-shadow 0.2s ease', width: '100%', textAlign: 'left' } : {}),
   };
 

@@ -6,12 +6,21 @@ import StatCard from '@/components/StatCard';
 import Table, { TableColumn } from '@/components/Table';
 import LineChart from '@/components/LineChart';
 import { apiFetch } from '@/lib/api';
+import { calcularKpisAnuales } from '@/lib/kpisAnuales';
 
 interface MesData {
   mes: string;
   total: number;
   leve: number;
   moderado: number;
+  grave: number;
+}
+
+interface AlumnoTop {
+  id: string;
+  nombre: string;
+  curso: string;
+  total: number;
   grave: number;
 }
 
@@ -25,16 +34,22 @@ const SERIES = [
 export default function MensualPage() {
   const router = useRouter();
   const [data, setData] = useState<MesData[]>([]);
+  const [topAlumnos, setTopAlumnos] = useState<AlumnoTop[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await apiFetch('/reportes/mensual');
-        const result = await response.json();
-        if (!result.ok) throw new Error(result.error || 'Error al cargar datos');
-        setData(result.data);
+        const [resMensual, resTop] = await Promise.all([
+          apiFetch('/reportes/mensual'),
+          apiFetch('/reportes/top-alumnos'),
+        ]);
+        const mensual = await resMensual.json();
+        const top = await resTop.json();
+        if (!mensual.ok) throw new Error(mensual.error || 'Error al cargar datos');
+        setData(mensual.data);
+        if (top.ok) setTopAlumnos(top.data);
       } catch (err: any) {
         setError(err.message || 'Error desconocido');
       } finally {
@@ -99,8 +114,48 @@ export default function MensualPage() {
         </p>
       </div>
 
+      {/* KPIs resumen del año (T10) */}
+      {(() => {
+        const kpis = calcularKpisAnuales(data);
+        if (!kpis) return null;
+        return (
+          <div data-testid="kpis-anuales" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+            <StatCard label="Total anual" value={kpis.totalAnual} icon="bar-chart-line" color="#003087" bg="#eef2ff" borderColor="#003087" />
+            <StatCard label="Promedio mensual" value={kpis.promedioMensual} icon="calculator" color="#6366f1" bg="#eef2ff" borderColor="#003087" />
+            <StatCard label="Mes más crítico" value={kpis.mesMasCritico} icon="exclamation-triangle" color="#dc2626" bg="#eef2ff" borderColor="#003087" />
+            <StatCard label="Mes con más graves" value={kpis.mesMasGraves} icon="shield-exclamation" color="#991b1b" bg="#eef2ff" borderColor="#003087" />
+          </div>
+        );
+      })()}
+
+      {/* Top 3 alumnos más conflictivos */}
+      {topAlumnos.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+          {topAlumnos.map((a, i) => (
+            <StatCard
+              key={a.id}
+              label={`#${i + 1} Más conflictivo`}
+              value={a.nombre}
+              icon="person-fill"
+              color="#7c3aed"
+              bg="#f5f3ff"
+              borderColor="#7c3aed"
+              sub={
+                <>
+                  <span style={{ fontWeight: 600 }}>{a.curso}</span>
+                  {' · '}
+                  <span>{a.total} incidencias</span>
+                  {' · '}
+                  <span style={{ color: '#991b1b' }}>{a.grave} graves</span>
+                </>
+              }
+            />
+          ))}
+        </div>
+      )}
+
       {/* Tarjetas por mes con cálculo de tendencia (T11) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         {data.map((mes, index) => {
           // Lógica de cálculo del Delta
           const variacion = index === 0 ? null : mes.total - data[index - 1].total;
