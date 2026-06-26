@@ -38,6 +38,8 @@ export default function IncidenciasPage() {
   const [filtroCurso, setFiltroCurso] = useState('');
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroAnio, setFiltroAnio] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   // Sincronizar filtros desde query params al montar y cuando cambien
   useEffect(() => {
@@ -110,6 +112,24 @@ export default function IncidenciasPage() {
       if (filtroAnio) coincideFecha = coincideFecha && fecha.getFullYear() === Number(filtroAnio);
     }
 
+    // Filtro por rango de fechas
+    if (fechaDesde || fechaHasta) {
+      const fechaIncidente = new Date(inc.fecha);
+      fechaIncidente.setHours(0, 0, 0, 0);
+
+      if (fechaDesde) {
+        const desde = new Date(fechaDesde);
+        desde.setHours(0, 0, 0, 0);
+        if (fechaIncidente < desde) coincideFecha = false;
+      }
+
+      if (fechaHasta) {
+        const hasta = new Date(fechaHasta);
+        hasta.setHours(23, 59, 59, 999);
+        if (fechaIncidente > hasta) coincideFecha = false;
+      }
+    }
+
     return coincideBusqueda && coincideGravedad && coincideEstado && coincideCurso && coincideFecha;
   });
 
@@ -153,54 +173,111 @@ export default function IncidenciasPage() {
         padding: '20px 24px',
         borderRadius: 12,
         border: '1px solid #e2e8f0',
-        marginBottom: 16,
-        display: 'grid',
-        gridTemplateColumns: '2fr 1fr 1fr 1fr',
-        gap: 16
+        marginBottom: 16
       }}>
-        <div>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
-            Buscar alumno o tipo
-          </label>
-          <input
-            style={fld}
-            placeholder="Nombre alumno, titulo, ID..."
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-          />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
+          <div style={{ gridColumn: 'span 2' }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+              Buscar alumno o tipo
+            </label>
+            <input
+              style={fld}
+              placeholder="Nombre alumno, titulo, ID..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+              Gravedad
+            </label>
+            <select style={fld} value={filtroGravedad} onChange={e => setFiltroGravedad(e.target.value)}>
+              <option value="">Todas</option>
+              <option value="Leve">Leve</option>
+              <option value="Moderado">Moderado</option>
+              <option value="Grave">Grave</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+              Estado
+            </label>
+            <select style={fld} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
+              <option value="">Todos</option>
+              <option value="Abierto">Abierto</option>
+              <option value="En seguimiento">En seguimiento</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
-            Gravedad
-          </label>
-          <select style={fld} value={filtroGravedad} onChange={e => setFiltroGravedad(e.target.value)}>
-            <option value="">Todas</option>
-            <option value="Leve">Leve</option>
-            <option value="Moderado">Moderado</option>
-            <option value="Grave">Grave</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
-            Estado
-          </label>
-          <select style={fld} value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-            <option value="">Todos</option>
-            <option value="Abierto">Abierto</option>
-            <option value="En seguimiento">En seguimiento</option>
-            <option value="Cerrado">Cerrado</option>
-          </select>
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
-            Curso
-          </label>
-          <select style={fld} value={filtroCurso} onChange={e => setFiltroCurso(e.target.value)}>
-            <option value="">Todos</option>
-            {cursos.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, alignItems: 'end' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+              Fecha desde
+            </label>
+            <input
+              type="date"
+              style={fld}
+              value={fechaDesde}
+              onChange={e => setFechaDesde(e.target.value)}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+              Fecha hasta
+            </label>
+            <input
+              type="date"
+              style={fld}
+              value={fechaHasta}
+              onChange={e => setFechaHasta(e.target.value)}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+              Curso
+            </label>
+            <select style={fld} value={filtroCurso} onChange={e => setFiltroCurso(e.target.value)}>
+              <option value="">Todos</option>
+              {cursos.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            {(fechaDesde || fechaHasta) && (
+              <button
+                onClick={() => {
+                  setFechaDesde('');
+                  setFechaHasta('');
+                }}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: 8,
+                  border: '1.5px solid #e2e8f0',
+                  fontSize: 13,
+                  fontFamily: 'inherit',
+                  background: '#fff',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  fontWeight: 500,
+                  width: '100%'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.background = '#f8fafc';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                  e.currentTarget.style.background = '#fff';
+                }}
+              >
+                <i className="bi bi-x-circle" /> Limpiar fechas
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

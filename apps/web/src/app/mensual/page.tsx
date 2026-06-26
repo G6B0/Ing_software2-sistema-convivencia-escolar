@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import StatCard from '@/components/StatCard';
 import Table, { TableColumn } from '@/components/Table';
 import LineChart from '@/components/LineChart';
@@ -22,6 +23,7 @@ const SERIES = [
 ];
 
 export default function MensualPage() {
+  const router = useRouter();
   const [data, setData] = useState<MesData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +101,7 @@ export default function MensualPage() {
 
       {/* Tarjetas por mes */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {data.map((mes) => (
+        {data.map((mes, index) => (
           <StatCard
             key={mes.mes}
             label={mes.mes}
@@ -113,6 +115,10 @@ export default function MensualPage() {
                 <span style={{ color: '#991b1b' }}>{mes.grave} Graves</span>
               </>
             }
+            onClick={() => {
+              const anio = new Date().getFullYear();
+              router.push(`/incidencias?mes=${index + 1}&anio=${anio}`);
+            }}
           />
         ))}
       </div>
@@ -126,8 +132,18 @@ export default function MensualPage() {
         <LineChart
           data={data as unknown as Array<Record<string, string | number>>}
           xKey="mes"
-          lines={SERIES.map((s, i) => ({ key: s.key, color: s.color, showLabel: i === 0 }))}
+          lines={SERIES.map((s, i) => ({ key: s.key, label: s.label, color: s.color, showLabel: i === 0 }))}
           height={210}
+          onPointClick={(_i, point) => {
+            const meses: Record<string, number> = {
+              Enero: 1, Febrero: 2, Marzo: 3, Abril: 4, Mayo: 5, Junio: 6,
+              Julio: 7, Agosto: 8, Septiembre: 9, Octubre: 10, Noviembre: 11, Diciembre: 12,
+            };
+            const mes = meses[point.mes as string];
+            if (mes) {
+              router.push(`/incidencias?mes=${mes}&anio=${new Date().getFullYear()}`);
+            }
+          }}
         />
         {/* Leyenda debajo del gráfico */}
         <div data-testid="leyenda" style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 16 }}>

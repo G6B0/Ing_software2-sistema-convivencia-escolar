@@ -256,12 +256,22 @@ export default function DashboardPage() {
                 data={evolucionData}
                 xKey="mes"
                 lines={[
-                  { key: 'total', color: '#003087', showLabel: true },
-                  { key: 'leve', color: '#15803d' },
-                  { key: 'moderado', color: '#e67e22' },
-                  { key: 'grave', color: '#991b1b' },
+                  { key: 'total', label: 'Total', color: '#003087', showLabel: true },
+                  { key: 'leve', label: 'Leve', color: '#15803d' },
+                  { key: 'moderado', label: 'Moderado', color: '#e67e22' },
+                  { key: 'grave', label: 'Grave', color: '#991b1b' },
                 ]}
                 height={220}
+                onPointClick={(_i, point) => {
+                  const meses: Record<string, number> = {
+                    Enero: 1, Febrero: 2, Marzo: 3, Abril: 4, Mayo: 5, Junio: 6,
+                    Julio: 7, Agosto: 8, Septiembre: 9, Octubre: 10, Noviembre: 11, Diciembre: 12,
+                  };
+                  const mes = meses[point.mes as string];
+                  if (mes) {
+                    router.push(`/incidencias?mes=${mes}&anio=${new Date().getFullYear()}`);
+                  }
+                }}
               />
               <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 12 }}>
                 {[
