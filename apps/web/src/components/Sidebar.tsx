@@ -28,12 +28,30 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [detalleHover, setDetalleHover] = useState<any | null>(null);
   const [animarCampanita, setAnimarCampanita] = useState(false);
   const [prevNoLeidas, setPrevNoLeidas] = useState(0);
+  const [tooltipY, setTooltipY] = useState(0);
 
-    useEffect(() => {
-    if (noLeidas > prevNoLeidas && prevNoLeidas !== 0) {
+  useEffect(() => {
+    if (noLeidas === 0) {
+      setPrevNoLeidas(0);
+      return;
+    }
+
+    const ultimoNotificado = parseInt(sessionStorage.getItem('sce_ultimo_notificado') || '-1');
+
+    if (ultimoNotificado === -1) {
+      sessionStorage.setItem('sce_ultimo_notificado', String(noLeidas));
+      setPrevNoLeidas(noLeidas);
+      return;
+    }
+
+    if (noLeidas > ultimoNotificado) {
       setAnimarCampanita(true);
+      reproducirSonido();
+      mostrarNotificacionPush('Hay un nuevo incidente grave que requiere tu atención.');
       setTimeout(() => setAnimarCampanita(false), 1000);
     }
+
+    sessionStorage.setItem('sce_ultimo_notificado', String(noLeidas));
     setPrevNoLeidas(noLeidas);
   }, [noLeidas]);
 
@@ -87,14 +105,6 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     document.addEventListener('mousedown', handleClickFuera);
     return () => document.removeEventListener('mousedown', handleClickFuera);
   }, [mostrarPanel]);
-  useEffect(() => {
-    if (noLeidas > prevNoLeidas && prevNoLeidas !== 0) {
-      setAnimarCampanita(true);
-      reproducirSonido();
-      setTimeout(() => setAnimarCampanita(false), 1000);
-    }
-    setPrevNoLeidas(noLeidas);
-  }, [noLeidas]);
 
   const marcarLeida = async (notificacion: any) => {
     await apiFetch(`/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
@@ -131,7 +141,30 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.4);
   } catch {}
-};
+  };
+
+  const mostrarNotificacionPush = (titulo: string) => {
+    try {
+      if (!('Notification' in window)) return;
+
+      if (Notification.permission === 'granted') {
+        new Notification('Incidente grave registrado', {
+          body: titulo,
+          icon: '/favicon.ico',
+        });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('Incidente grave registrado', {
+              body: titulo,
+              icon: '/favicon.ico',
+              silent: true,
+            });
+          }
+        });
+      }
+    } catch {}
+  };
 
   const initials = user.name.split(' ').slice(0, 2).map(n => n[0]).join('');
 
@@ -222,7 +255,11 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                               key={n.id}
                               href={`/seguimiento/${n.incidenteId}`}
                               onClick={() => { marcarLeida(n); setMostrarPanel(false); }}
-                              onMouseEnter={() => { setHover(n.id); cargarDetalle(n.incidenteId); }}
+                              onMouseEnter={(e) => { 
+                                setHover(n.id); 
+                                setTooltipY(e.clientY);
+                                cargarDetalle(n.incidenteId); 
+                              }}
                               onMouseLeave={() => { setHover(null); setDetalleHover(null); }}
                               style={{
                                 position: 'relative',
@@ -255,6 +292,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                                 <div style={{
                                   position: 'fixed',
                                   left: 548,
+                                  top: tooltipY - 20,
                                   background: '#0f172a',
                                   color: '#fff',
                                   borderRadius: 10,
