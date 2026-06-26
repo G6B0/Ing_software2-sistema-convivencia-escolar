@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 interface FilaCurso {
   curso: string;
@@ -12,6 +13,7 @@ interface FilaCurso {
 }
 
 export default function RankingPage() {
+  const router = useRouter();
   const [datos, setDatos] = useState<FilaCurso[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +136,11 @@ export default function RankingPage() {
             {/* Barras */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {datos.map((fila, idx) => (
-                <div key={fila.curso} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  key={fila.curso}
+                  onClick={() => router.push(`/incidencias?curso=${encodeURIComponent(fila.curso)}`)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                >
                   <div style={{ width: 100, fontSize: 13, fontWeight: 600, color: '#0f172a', textAlign: 'right', flexShrink: 0 }}>
                     {fila.curso}
                   </div>
@@ -211,7 +217,8 @@ export default function RankingPage() {
                 {datos.map((fila, idx) => (
                   <tr
                     key={fila.curso}
-                    style={{ borderBottom: '1px solid #f1f5f9' }}
+                    style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                    onClick={() => router.push(`/incidencias?curso=${encodeURIComponent(fila.curso)}`)}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                   >

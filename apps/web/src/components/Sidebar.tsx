@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { hasAnyPermission, NAVIGATION_ITEMS, PERMISSIONS } from '@/lib/permissions';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const SESSION_STORAGE_KEY = 'sce_sesion';
 
@@ -24,6 +26,16 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [noLeidas, setNoLeidas] = useState(0);
   const [hover, setHover] = useState<string | null>(null);
   const [detalleHover, setDetalleHover] = useState<any | null>(null);
+  const [animarCampanita, setAnimarCampanita] = useState(false);
+  const [prevNoLeidas, setPrevNoLeidas] = useState(0);
+
+    useEffect(() => {
+    if (noLeidas > prevNoLeidas && prevNoLeidas !== 0) {
+      setAnimarCampanita(true);
+      setTimeout(() => setAnimarCampanita(false), 1000);
+    }
+    setPrevNoLeidas(noLeidas);
+  }, [noLeidas]);
 
   useEffect(() => {
     try {
@@ -75,6 +87,14 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     document.addEventListener('mousedown', handleClickFuera);
     return () => document.removeEventListener('mousedown', handleClickFuera);
   }, [mostrarPanel]);
+  useEffect(() => {
+    if (noLeidas > prevNoLeidas && prevNoLeidas !== 0) {
+      setAnimarCampanita(true);
+      reproducirSonido();
+      setTimeout(() => setAnimarCampanita(false), 1000);
+    }
+    setPrevNoLeidas(noLeidas);
+  }, [noLeidas]);
 
   const marcarLeida = async (notificacion: any) => {
     await apiFetch(`/notificaciones/${notificacion.id}/leida`, { method: 'PATCH' });
@@ -90,6 +110,26 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     const response = await apiFetch(`/incidentes/${incidenteId}`);
     const data = await response.json();
     if (data.ok) setDetalleHover(data.data);
+  } catch {}
+  };
+
+  const reproducirSonido = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    oscillator.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.4);
   } catch {}
 };
 
@@ -122,7 +162,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                 onClick={() => setMostrarPanel(!mostrarPanel)}
                 style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
               >
-                <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />
+                <i className={`bi bi-bell-fill ${animarCampanita ? 'campanita-shake' : ''}`}
+                style={{ fontSize: 16 }}  />
                 {noLeidas > 0 && (
                   <span style={{
                     position: 'absolute',
@@ -198,7 +239,12 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                                 <div>
                                   <div style={{ fontSize: 13, fontWeight: n.leida ? 400 : 600, color: '#0f172a' }}>{n.titulo}</div>
                                   <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-                                    {new Date(n.fechaCreacion).toLocaleDateString('es-CL')}
+                                    {n.fechaCreacion &&
+                                      formatDistanceToNow(new Date(n.fechaCreacion), {
+                                        addSuffix: true,
+                                        locale: es
+                                      })
+                                    }
                                   </div>
                                 </div>
                                 {!n.leida && (

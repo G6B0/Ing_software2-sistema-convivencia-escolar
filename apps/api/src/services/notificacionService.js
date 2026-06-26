@@ -29,7 +29,7 @@ const notificarApoderado = async (incidente, idAlumno, supabase) => {
       }
     }
 
-    // ESTRATEGIA 2 (Salvavidas definitivo): Buscar en Apoderados directamente por el campo 'alumnoId'
+    // ESTRATEGIA 2 (Salvavidas): Buscar en Apoderados directamente por el campo 'alumnoId'
     if (!correoDestino) {
       const apoderadoDirecto = datosInstitucionales.apoderados.find(
         ap => String(ap.alumnoId).trim().toUpperCase() === idLimpio.toUpperCase()
@@ -39,17 +39,24 @@ const notificarApoderado = async (incidente, idAlumno, supabase) => {
       }
     }
 
-    // Verificación final del destino
-    if (correoDestino) {
-      console.log(`🎯 ¡ÉXITO ABSOLUTO! Correo del apoderado detectado en el sistema: ${correoDestino}`);
+    // =========================================================
+    // Verificación final y VALIDACIÓN REGEX
+    // =========================================================
+    const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Expresión regular para validar formato email
+
+    if (correoDestino && regexCorreo.test(correoDestino)) {
+      console.log(`🎯 ¡ÉXITO! Correo válido detectado en el sistema: ${correoDestino}`);
     } else {
-      console.log(`⚠️ No se encontró coincidencia para [${idLimpio}] en el JSON. Usando correo de respaldo del sistema (.env)`);
+      console.log(`⚠️ Correo inválido o no encontrado para [${idLimpio}]. Usando correo de respaldo del sistema (.env)`);
       correoDestino = process.env.EMAIL_USER;
     }
 
-    if (!correoDestino) {
+    // Si por alguna razón ni siquiera el de respaldo sirve, abortamos limpiamente
+    if (!correoDestino || !regexCorreo.test(correoDestino)) {
+      console.log('❌ Operación abortada: Ningún correo válido disponible.');
       return { emailSent: false };
     }
+    // =========================================================
 
     // Plantilla HTML con Filtro de Privacidad (Criterio de Aceptación 2)
     const htmlPlantilla = `
@@ -87,7 +94,7 @@ const notificarApoderado = async (incidente, idAlumno, supabase) => {
 
   } catch (error) {
     console.error('Error crítico en notificacionService:', error.message);
-    return { emailSent: false };
+    return { emailSent: false }; // Falla silenciosa y controlada
   }
 };
 

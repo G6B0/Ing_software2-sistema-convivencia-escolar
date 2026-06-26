@@ -99,28 +99,34 @@ export default function MensualPage() {
         </p>
       </div>
 
-      {/* Tarjetas por mes */}
+      {/* Tarjetas por mes con cálculo de tendencia (T11) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {data.map((mes, index) => (
-          <StatCard
-            key={mes.mes}
-            label={mes.mes}
-            value={mes.total}
-            sub={
-              <>
-                <span style={{ color: '#15803d' }}>{mes.leve} Leves</span>
-                {' · '}
-                <span style={{ color: '#e67e22' }}>{mes.moderado} Moderados</span>
-                {' · '}
-                <span style={{ color: '#991b1b' }}>{mes.grave} Graves</span>
-              </>
-            }
-            onClick={() => {
-              const anio = new Date().getFullYear();
-              router.push(`/incidencias?mes=${index + 1}&anio=${anio}`);
-            }}
-          />
-        ))}
+        {data.map((mes, index) => {
+          // Lógica de cálculo del Delta
+          const variacion = index === 0 ? null : mes.total - data[index - 1].total;
+
+          return (
+            <StatCard
+              key={mes.mes}
+              label={mes.mes}
+              value={mes.total}
+              delta={variacion}
+              onClick={() => {
+                const anio = new Date().getFullYear();
+                router.push(`/incidencias?mes=${index + 1}&anio=${anio}`);
+              }}
+              sub={
+                <>
+                  <span style={{ color: '#15803d' }}>{mes.leve} Leves</span>
+                  {' · '}
+                  <span style={{ color: '#e67e22' }}>{mes.moderado} Moderados</span>
+                  {' · '}
+                  <span style={{ color: '#991b1b' }}>{mes.grave} Graves</span>
+                </>
+              }
+            />
+          );
+        })}
       </div>
 
       {/* Gráfico de líneas */}
