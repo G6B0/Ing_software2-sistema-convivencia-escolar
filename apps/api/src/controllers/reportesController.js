@@ -163,4 +163,43 @@ async function obtenerReporteMensual(req, res) {
   }
 }
 
-module.exports = { obtenerDashboard, obtenerRankingCursos, obtenerReporteMensual }
+async function obtenerTopAlumnos(req, res) {
+  try {
+    const servicioIncidentes = req.app.locals.servicioIncidentes
+
+    const incidentes = await servicioIncidentes.listarIncidentes()
+
+    const anioActual = new Date().getFullYear()
+
+    // Agrupar incidentes por alumno (solo del año actual)
+    const alumnosMap = {}
+    incidentes.forEach((i) => {
+      const fecha = new Date(i.fecha)
+      if (fecha.getFullYear() !== anioActual) return
+      ;(i.participantes || []).forEach((p) => {
+        const id = p.alumnoInstitucionalId
+        if (!alumnosMap[id]) {
+          alumnosMap[id] = {
+            id,
+            nombre: p.nombreAlumno || id,
+            curso: p.curso || '—',
+            total: 0,
+            grave: 0,
+          }
+        }
+        alumnosMap[id].total += 1
+        if (i.gravedad === 'Grave') alumnosMap[id].grave += 1
+      })
+    })
+
+    const top = Object.values(alumnosMap)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 3)
+
+    return res.json({ ok: true, data: top })
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message })
+  }
+}
+
+module.exports = { obtenerDashboard, obtenerRankingCursos, obtenerReporteMensual, obtenerTopAlumnos }

@@ -4,6 +4,7 @@ const {
   obtenerDashboard,
   obtenerRankingCursos,
   obtenerReporteMensual,
+  obtenerTopAlumnos,
 } = require('../controllers/reportesController');
 const { PERMISOS } = require('../lib/rolesPermisos');
 const { autorizarPermisos } = require('../middleware/autorizacion');
@@ -29,5 +30,6 @@ router.get('/reportes/ranking-cursos', autorizarPermisos([
   PERMISOS.VISUALIZAR_REINCIDENCIA,
 ]), obtenerRankingCursos);
 router.get('/reportes/mensual', autorizarPermisos(permisosReportes), obtenerReporteMensual);
+router.get('/reportes/top-alumnos', autorizarPermisos(permisosReportes), obtenerTopAlumnos);
 
 module.exports = router;
