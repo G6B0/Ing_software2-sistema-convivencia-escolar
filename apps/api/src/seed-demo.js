@@ -1,521 +1,261 @@
 /**
- * Script para poblar base de datos con datos realistas para Sprint Review
- * Incluye incidentes en diferentes estados y con seguimientos completos
+ * Script para poblar base de datos con datos realistas para demo
+ * Genera incidentes distribuidos de enero a junio 2026
  * Uso: node apps/api/src/seed-demo.js
  */
 
-const API_URL = 'http://localhost:3001';
+const path = require('path');
+const { randomUUID } = require('crypto');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const { crearClienteSupabase } = require('./lib/supabase');
 
-const incidentes = [
-  // === CERRADOS (casos resueltos) ===
-  {
-    titulo: 'Conflicto entre pares',
-    fecha: '2026-05-10',
-    descripcion: 'Discusion verbal entre dos alumnos durante el recreo por un juego de futbol. Se observo tension pero no llego a agresion fisica.',
-    gravedad: 'Leve',
-    funcionarioResponsableId: 'FUN-3001',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1006', rolEnIncidente: 'Involucrado' },
-      { alumnoInstitucionalId: 'ALU-1010', rolEnIncidente: 'Involucrado' }
-    ],
-    estado: 'Cerrado',
-    seguimientos: [
-      {
-        accion: 'Dialogo con ambos alumnos',
-        descripcion: 'Se converso con Lucas Herrera y Tomas Navarro inmediatamente despues del incidente. Ambos explicaron su version de los hechos. Se trataba de un malentendido sobre las reglas del juego.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-10'
-      },
-      {
-        accion: 'Mediacion escolar',
-        descripcion: 'La orientadora Elena Vargas realizo sesion de mediacion donde los alumnos se disculparon mutuamente y acordaron respetar las reglas establecidas en los juegos.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-13'
-      },
-      {
-        accion: 'Cierre del caso',
-        descripcion: 'Tras una semana de observacion, los alumnos retomaron su amistad con normalidad. No se registraron nuevos conflictos. Se cierra el caso con resultado positivo.',
-        evolucionCaso: 'Resuelto',
-        fecha: '2026-05-17'
-      }
-    ]
-  },
-  {
-    titulo: 'Uso de celular no autorizado',
-    fecha: '2026-05-08',
-    descripcion: 'Alumna fue sorprendida usando su telefono celular durante la clase de matematicas, lo cual esta prohibido segun el reglamento interno.',
-    gravedad: 'Leve',
-    funcionarioResponsableId: 'FUN-3006',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1011', rolEnIncidente: 'Involucrado' }
-    ],
-    estado: 'Cerrado',
-    seguimientos: [
-      {
-        accion: 'Retencion del dispositivo',
-        descripcion: 'El profesor Javier Campos retuvo el celular de Florencia Diaz segun protocolo. Se registro la falta en el libro de clases y se cito al apoderado.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-08'
-      },
-      {
-        accion: 'Reunion con apoderado',
-        descripcion: 'Natalia Diaz (madre) asistio para retirar el dispositivo. Se le informo sobre la normativa y firmo acta de compromiso. La alumna mostro disposicion a respetar la regla.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-09'
-      },
-      {
-        accion: 'Seguimiento y cierre',
-        descripcion: 'Durante dos semanas se verifico que la alumna no volviera a usar el celular en clases. Cumplimiento satisfactorio. Se cierra el caso.',
-        evolucionCaso: 'Resuelto',
-        fecha: '2026-05-22'
-      }
-    ]
-  },
-  {
-    titulo: 'Bullying',
-    fecha: '2026-04-15',
-    descripcion: 'Alumna reporta que un compañero la molesta constantemente con burlas sobre su apariencia fisica, generandole malestar emocional. Situacion se ha repetido durante varias semanas.',
-    gravedad: 'Grave',
-    funcionarioResponsableId: 'FUN-3004',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1007', rolEnIncidente: 'Victima' },
-      { alumnoInstitucionalId: 'ALU-1008', rolEnIncidente: 'Agresor' }
-    ],
-    estado: 'Cerrado',
-    seguimientos: [
-      {
-        accion: 'Activacion de protocolo de acoso escolar',
-        descripcion: 'Ricardo Pizarro (encargado de convivencia) activo el protocolo de acoso. Se entrevisto a Sofia Araya quien relato situacion de burlas sistematicas por parte de Benjamin Castillo.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-04-15'
-      },
-      {
-        accion: 'Recopilacion de testimonios',
-        descripcion: 'Se entrevisto a 4 compañeros del curso. Tres confirmaron haber presenciado las burlas. Se documento todo en informe formal para el comite de convivencia.',
-        evolucionCaso: 'Empeorando',
-        fecha: '2026-04-16'
-      },
-      {
-        accion: 'Citacion urgente a apoderados',
-        descripcion: 'Se cito a Daniela Araya (madre de Sofia) y Cristian Castillo (padre de Benjamin). Se informo la gravedad del caso y las medidas disciplinarias correspondientes.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-04-17'
-      },
-      {
-        accion: 'Medidas disciplinarias y plan de reparacion',
-        descripcion: 'El comite determino suspension de 3 dias para Benjamin con plan de reincorporacion. Se inicio plan de acompañamiento psicologico para Sofia y derivacion externa para Benjamin.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-04-18'
-      },
-      {
-        accion: 'Sesion de reparacion',
-        descripcion: 'Bajo supervision de la psicologa, Benjamin ofrecio disculpas formales a Sofia. Se firmo compromiso de no repetir conducta y respeto mutuo.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-04-25'
-      },
-      {
-        accion: 'Seguimiento psicosocial',
-        descripcion: 'Durante un mes se realizo seguimiento semanal con ambos alumnos. Sofia reporta sentirse mejor y mas segura. Benjamin muestra cambio positivo en su conducta.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-15'
-      },
-      {
-        accion: 'Cierre del protocolo de acoso',
-        descripcion: 'Tras 4 semanas sin nuevos incidentes y evaluacion positiva del psicologo, el comite cierra el caso. Se mantiene monitoreo preventivo durante el resto del semestre.',
-        evolucionCaso: 'Resuelto',
-        fecha: '2026-05-20'
-      }
-    ]
-  },
+const ALUMNOS = [
+  'ALU-1001','ALU-1002','ALU-1003','ALU-1004','ALU-1005','ALU-1006',
+  'ALU-1007','ALU-1008','ALU-1009','ALU-1010','ALU-1011','ALU-1012'
+];
+const FUNCIONARIOS = ['FUN-3001','FUN-3002','FUN-3006','FUN-3008','FUN-3009'];
+const ROLES = ['Agresor','Victima','Testigo','Involucrado'];
 
-  // === EN SEGUIMIENTO (casos activos con avances) ===
-  {
-    titulo: 'Agresion fisica',
-    fecha: '2026-05-22',
-    descripcion: 'Durante el recreo, un alumno empujo fuertemente a otro estudiante causandole caida y lesion menor en la rodilla. Testigos indican que fue intencional.',
-    gravedad: 'Grave',
-    funcionarioResponsableId: 'FUN-3002',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1004', rolEnIncidente: 'Agresor' },
-      { alumnoInstitucionalId: 'ALU-1005', rolEnIncidente: 'Victima' },
-      { alumnoInstitucionalId: 'ALU-1009', rolEnIncidente: 'Testigo' }
-    ],
-    estado: 'En seguimiento',
-    seguimientos: [
-      {
-        accion: 'Intervencion inmediata y primeros auxilios',
-        descripcion: 'El inspector Pedro Salinas intervino de inmediato. Se llevo a Antonia Fuentes a enfermeria donde se limpio y vendó la herida. No requirio atencion medica externa. Se separo a Diego Morales.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-22'
-      },
-      {
-        accion: 'Registro de testimonios',
-        descripcion: 'Se entrevisto a Isidora Vega (testigo) y otros 2 compañeros presentes. Todos confirman que Diego empujo a Antonia sin provocacion aparente. Se registro en libro de clases.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-22'
-      },
-      {
-        accion: 'Notificacion a apoderados',
-        descripcion: 'Se contacto telefonicamente a Paula Morales (madre de Diego) y Claudia Fuentes (madre de Antonia). Ambas fueron informadas y citadas para reunion urgente al dia siguiente.',
-        evolucionCaso: 'Empeorando',
-        fecha: '2026-05-22'
-      },
-      {
-        accion: 'Reunion con apoderados y equipo directivo',
-        descripcion: 'Se reunieron ambos apoderados con el director, inspector y encargado de convivencia. Se informaron las medidas disciplinarias y el plan de seguimiento. Diego sera suspendido 2 dias.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-23'
-      },
-      {
-        accion: 'Inicio de acompañamiento psicosocial',
-        descripcion: 'La orientadora Patricia Munoz inicio sesiones con Diego para trabajar control de impulsos. Antonia tambien recibio apoyo emocional. Se programan sesiones semanales.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-27'
-      }
-    ]
-  },
-  {
-    titulo: 'Agresion verbal',
-    fecha: '2026-05-20',
-    descripcion: 'Alumno profiere insultos y palabras ofensivas hacia compañera durante la clase de historia, afectando el clima del aula y generando malestar en la victima.',
-    gravedad: 'Moderado',
-    funcionarioResponsableId: 'FUN-3001',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1002', rolEnIncidente: 'Agresor' },
-      { alumnoInstitucionalId: 'ALU-1003', rolEnIncidente: 'Victima' }
-    ],
-    estado: 'En seguimiento',
-    seguimientos: [
-      {
-        accion: 'Intervencion en aula',
-        descripcion: 'La profesora Ana Morales detuvo la clase e intervino inmediatamente. Separo a Martin Soto y registro el incidente. Se envio al alumno a inspeccion general.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-20'
-      },
-      {
-        accion: 'Entrevistas individuales',
-        descripcion: 'Se entrevisto por separado a Martin y Valentina. Martin admitio haber insultado a Valentina por frustracion con una nota. Valentina relato sentirse humillada frente al curso.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-20'
-      },
-      {
-        accion: 'Contacto con apoderados',
-        descripcion: 'Se llamo a Carolina Soto y Jorge Perez. Carolina se mostro preocupada por la conducta repetitiva de Martin. Jorge solicito reunion presencial para conocer medidas.',
-        evolucionCaso: 'Empeorando',
-        fecha: '2026-05-21'
-      },
-      {
-        accion: 'Mediacion y compromiso de reparacion',
-        descripcion: 'La orientadora Elena Vargas facilito sesion de mediacion. Martin ofrecio disculpas a Valentina. Se firmo compromiso y se inscribio a Martin en taller de manejo de emociones.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-24'
-      }
-    ]
-  },
-  {
-    titulo: 'Cyberbullying',
-    fecha: '2026-05-18',
-    descripcion: 'Alumna reporta que compañeros crearon un grupo de WhatsApp para burlarse de ella, compartiendo memes ofensivos sobre su apariencia. La situacion afecta su salud emocional.',
-    gravedad: 'Grave',
-    funcionarioResponsableId: 'FUN-3003',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1001', rolEnIncidente: 'Victima' },
-      { alumnoInstitucionalId: 'ALU-1012', rolEnIncidente: 'Agresor' },
-      { alumnoInstitucionalId: 'ALU-1004', rolEnIncidente: 'Agresor' }
-    ],
-    estado: 'En seguimiento',
-    seguimientos: [
-      {
-        accion: 'Denuncia formal y activacion de protocolo',
-        descripcion: 'La apoderada Marcela Rojas presento denuncia formal con capturas de pantalla del grupo. La orientadora Elena Vargas activo protocolo de ciberacoso escolar.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-18'
-      },
-      {
-        accion: 'Recopilacion de evidencia digital',
-        descripcion: 'Se solicitaron los celulares de Mateo Aguilera y Diego Morales. Se documentaron los mensajes ofensivos y se identifico a otros 3 participantes del grupo.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-19'
-      },
-      {
-        accion: 'Citacion urgente a todos los apoderados',
-        descripcion: 'Se cito a los apoderados de los 5 alumnos involucrados. Se les informo la gravedad del ciberacoso y las consecuencias legales y disciplinarias que contempla el reglamento.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-20'
-      },
-      {
-        accion: 'Situacion se agrava - nuevo grupo creado',
-        descripcion: 'Se detecto que los agresores crearon un nuevo grupo con otros compañeros. Camila reporta aumento de ansiedad y solicito no asistir a clases. La situacion escalo a pesar de las medidas.',
-        evolucionCaso: 'Empeorando',
-        fecha: '2026-05-21'
-      },
-      {
-        accion: 'Medidas disciplinarias reforzadas',
-        descripcion: 'El comite determino suspension de 5 dias para los agresores y cambio de curso para dos de ellos. Se programo charla sobre ciberacoso para todo el nivel. Derivacion a OPD comunal.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-22'
-      },
-      {
-        accion: 'Apoyo psicologico intensivo a la victima',
-        descripcion: 'Camila Rojas inicio sesiones con psicologa externa dos veces por semana. En el colegio recibe acompañamiento diario de la orientadora. Se monitorea su estado emocional constantemente.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-25'
-      }
-    ]
-  },
-  {
-    titulo: 'Falta de respeto a funcionario',
-    fecha: '2026-05-24',
-    descripcion: 'Alumno responde de manera irrespetuosa al inspector cuando este le llama la atencion por correr en el pasillo, usando lenguaje inapropiado y actitud desafiante.',
-    gravedad: 'Moderado',
-    funcionarioResponsableId: 'FUN-3008',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1010', rolEnIncidente: 'Agresor' }
-    ],
-    estado: 'En seguimiento',
-    seguimientos: [
-      {
-        accion: 'Registro inmediato del incidente',
-        descripcion: 'El inspector Sebastian Torres registro la falta grave en el libro de clases. Se llevo a Tomas Navarro a la oficina del encargado de convivencia.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-24'
-      },
-      {
-        accion: 'Entrevista con el alumno',
-        descripcion: 'Ricardo Pizarro converso con Tomas sobre el respeto a la autoridad escolar. El alumno mostro arrepentimiento y explico que estaba frustrado por problemas familiares.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-24'
-      },
-      {
-        accion: 'Citacion al apoderado',
-        descripcion: 'Se cito a Hector Navarro para informar la situacion. El apoderado confirmo dificultades familiares recientes. Se acordo trabajo conjunto entre familia y colegio.',
-        evolucionCaso: 'Mejorando',
-        fecha: '2026-05-27'
-      },
-      {
-        accion: 'Seguimiento semanal - conducta sin variacion',
-        descripcion: 'Tras una semana de monitoreo, Tomas mantiene actitud similar. No hay nuevos incidentes graves pero tampoco mejoria notable en su trato con funcionarios. Situacion familiar sigue compleja.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-29'
-      }
-    ]
-  },
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const pickN = (arr, n) => {
+  const shuffled = [...arr].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, Math.min(n, arr.length));
+};
 
-  // === ABIERTOS (casos recientes) ===
-  {
-    titulo: 'Hurto o robo',
-    fecha: '2026-05-28',
-    descripcion: 'Alumno reporta la desaparicion de su estuche con utiles escolares de su mochila durante la clase de educacion fisica. Otros compañeros tambien reportan perdidas similares en dias anteriores.',
-    gravedad: 'Moderado',
-    funcionarioResponsableId: 'FUN-3002',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1006', rolEnIncidente: 'Victima' }
-    ],
-    estado: 'Abierto',
-    seguimientos: [
-      {
-        accion: 'Registro inicial de la denuncia',
-        descripcion: 'Lucas Herrera reporto al inspector Pedro Salinas la perdida de su estuche. Se registro el incidente y se inicio investigacion. Se consulto si otros alumnos notaron algo inusual.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-28'
-      },
-      {
-        accion: 'Revision de camaras de seguridad',
-        descripcion: 'Se solicito al equipo de seguridad revisar las grabaciones del pasillo cerca del camarín. Se identificaron los momentos en que los alumnos dejaron sus pertenencias.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-28'
-      },
-      {
-        accion: 'Investigacion sin avances',
-        descripcion: 'Las camaras no capturaron el momento del hurto debido a angulo de vision. Se entrevisto a compañeros pero nadie vio nada sospechoso. No hay nuevas pistas sobre el responsable.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-30'
-      }
-    ]
-  },
-  {
-    titulo: 'Pelea entre alumnos',
-    fecha: '2026-05-27',
-    descripcion: 'Dos alumnos se enfrentaron fisicamente en el patio durante el almuerzo. Intercambiaron golpes antes de que funcionarios pudieran separarlos. Uno de ellos presenta hematoma en el rostro.',
-    gravedad: 'Grave',
-    funcionarioResponsableId: 'FUN-3002',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1008', rolEnIncidente: 'Agresor' },
-      { alumnoInstitucionalId: 'ALU-1012', rolEnIncidente: 'Agresor' },
-      { alumnoInstitucionalId: 'ALU-1011', rolEnIncidente: 'Testigo' }
-    ],
-    estado: 'Abierto',
-    seguimientos: [
-      {
-        accion: 'Separacion de los involucrados',
-        descripcion: 'El inspector Pedro Salinas y la profesora Ana Morales separaron a Benjamin Castillo y Mateo Aguilera. Se verifico que Benjamin presentara hematoma en pomulo derecho.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-27'
-      },
-      {
-        accion: 'Atencion de primeros auxilios',
-        descripcion: 'Se llevo a Benjamin a enfermeria donde se aplico hielo. Se contacto a su apoderado Cristian Castillo quien autorizo que fuera llevado al servicio de urgencia para descarte.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-27'
-      },
-      {
-        accion: 'Entrevistas iniciales',
-        descripcion: 'Se entrevisto por separado a ambos alumnos y a la testigo Florencia Diaz. Versiones contradictorias sobre quien inicio la agresion. Se requiere mas investigacion.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-27'
-      }
-    ]
-  },
-  {
-    titulo: 'Discriminacion',
-    fecha: '2026-05-29',
-    descripcion: 'Alumna extranjera reporta que compañeros la excluyen de actividades grupales y hacen comentarios xenofobicos sobre su nacionalidad. Situacion se repite desde hace dos semanas.',
-    gravedad: 'Grave',
-    funcionarioResponsableId: 'FUN-3004',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1009', rolEnIncidente: 'Victima' }
-    ],
-    estado: 'Abierto',
-    seguimientos: [
-      {
-        accion: 'Recepcion de la denuncia',
-        descripcion: 'Fernanda Vega (madre de Isidora) se presento en el colegio para reportar la situacion de discriminacion que afecta a su hija. Ricardo Pizarro registro la denuncia formalmente.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-29'
-      },
-      {
-        accion: 'Entrevistas con compañeros del curso',
-        descripcion: 'Se entrevisto a varios compañeros de Isidora. Algunos confirmaron comentarios inadecuados pero minimizaron su gravedad. Se identifico a tres alumnos como principales responsables.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-30'
-      }
-    ]
-  },
-  {
-    titulo: 'Interrupcion de clases',
-    fecha: '2026-05-29',
-    descripcion: 'Alumno interrumpe constantemente la clase de lenguaje con bromas y comentarios fuera de lugar, impidiendo el normal desarrollo de la actividad pedagogica.',
-    gravedad: 'Leve',
-    funcionarioResponsableId: 'FUN-3006',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1004', rolEnIncidente: 'Involucrado' }
-    ],
-    estado: 'Abierto',
-    seguimientos: []
-  },
-  {
-    titulo: 'Daño a propiedad escolar',
-    fecha: '2026-05-30',
-    descripcion: 'Se encontro rayado con marcador permanente en la pared del baño de varones. El mensaje contiene lenguaje inapropiado. Se identifico a alumno sospechoso mediante revision de camaras.',
-    gravedad: 'Moderado',
-    funcionarioResponsableId: 'FUN-3008',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1002', rolEnIncidente: 'Sospechoso' }
-    ],
-    estado: 'Abierto',
-    seguimientos: [
-      {
-        accion: 'Constatacion del daño',
-        descripcion: 'El inspector Sebastian Torres constato el rayado en el baño del segundo piso. Se tomo fotografia como evidencia. Se estima que el daño ocurrio durante la jornada de la mañana.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-30'
-      }
-    ]
-  },
-  {
-    titulo: 'Accidente escolar',
-    fecha: '2026-05-30',
-    descripcion: 'Alumna sufre caida en las escaleras durante el cambio de hora. Presenta dolor en tobillo derecho y dificultad para caminar. Se activa protocolo de accidente escolar.',
-    gravedad: 'Moderado',
-    funcionarioResponsableId: 'FUN-3001',
-    participantes: [
-      { alumnoInstitucionalId: 'ALU-1007', rolEnIncidente: 'Victima' }
-    ],
-    estado: 'Abierto',
-    seguimientos: [
-      {
-        accion: 'Atencion inmediata',
-        descripcion: 'La profesora Ana Morales auxilio a Sofia Araya tras la caida. Se llevo a enfermeria donde se inmovilizo el tobillo. Se lleno formulario de accidente escolar.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-30'
-      },
-      {
-        accion: 'Traslado a centro asistencial',
-        descripcion: 'Se contacto a Daniela Araya (madre) quien autorizo traslado al hospital. El inspector acompaño a la alumna al servicio de urgencia para atencion con seguro escolar.',
-        evolucionCaso: 'Sin cambios',
-        fecha: '2026-05-30'
-      }
-    ]
-  }
+const plantillas = [
+  { titulo: 'Conflicto entre pares', gravedad: 'Leve', desc: 'Discusion verbal entre alumnos durante el recreo. Se observo tension pero no hubo agresion fisica.' },
+  { titulo: 'Agresion verbal', gravedad: 'Moderado', desc: 'Alumno profiere insultos hacia compañero durante la clase, afectando el clima del aula.' },
+  { titulo: 'Agresion fisica', gravedad: 'Grave', desc: 'Alumno empujo a compañero causando caida y lesion menor. Testigos confirman que fue intencional.' },
+  { titulo: 'Bullying', gravedad: 'Grave', desc: 'Alumno reporta ser molestado constantemente con burlas, generando malestar emocional sostenido.' },
+  { titulo: 'Cyberbullying', gravedad: 'Grave', desc: 'Se detecta grupo de mensajeria donde se comparten memes ofensivos sobre un compañero.' },
+  { titulo: 'Uso de celular no autorizado', gravedad: 'Leve', desc: 'Alumno sorprendido usando telefono durante clase, incumpliendo el reglamento interno.' },
+  { titulo: 'Interrupcion de clases', gravedad: 'Leve', desc: 'Alumno interrumpe reiteradamente la clase con comentarios fuera de lugar.' },
+  { titulo: 'Hurto o robo', gravedad: 'Moderado', desc: 'Alumno reporta desaparicion de pertenencias personales de su mochila durante clases.' },
+  { titulo: 'Pelea entre alumnos', gravedad: 'Grave', desc: 'Dos alumnos se enfrentaron fisicamente en el patio. Intercambiaron golpes antes de ser separados.' },
+  { titulo: 'Daño a propiedad escolar', gravedad: 'Moderado', desc: 'Se encontro mobiliario dañado intencionalmente en sala de clases.' },
+  { titulo: 'Falta de respeto a funcionario', gravedad: 'Moderado', desc: 'Alumno responde de manera irrespetuosa a funcionario usando lenguaje inapropiado.' },
+  { titulo: 'Discriminacion', gravedad: 'Grave', desc: 'Alumno reporta ser excluido de actividades grupales y recibir comentarios discriminatorios.' },
+  { titulo: 'Accidente escolar', gravedad: 'Moderado', desc: 'Alumno sufre caida en escaleras durante cambio de hora, presenta dolor y dificultad para caminar.' },
+  { titulo: 'Consumo de sustancias', gravedad: 'Grave', desc: 'Se detecto olor a tabaco en sector de baños, alumno fue identificado por inspector.' },
+  { titulo: 'Copia en evaluacion', gravedad: 'Leve', desc: 'Alumno fue sorprendido copiando durante prueba de matematicas, profesor retiro la evaluacion.' },
+  { titulo: 'Inasistencia reiterada', gravedad: 'Leve', desc: 'Alumno acumula inasistencias injustificadas durante las ultimas semanas.' },
+  { titulo: 'Deterioro de material didactico', gravedad: 'Leve', desc: 'Se encontraron libros de biblioteca con paginas arrancadas, alumno identificado por registro de prestamo.' },
+  { titulo: 'Amenazas entre alumnos', gravedad: 'Grave', desc: 'Alumno amenaza verbalmente a compañero con hacerle daño fuera del colegio.' },
 ];
 
-async function seed() {
-  console.log('=== INICIANDO SEED DE DATOS DEMO ===\n');
+const accionesSeg = [
+  { accion: 'Intervencion inmediata', desc: 'Funcionario intervino de inmediato, separando a los involucrados y registrando los hechos.' },
+  { accion: 'Entrevista con alumno', desc: 'Se entrevisto al alumno involucrado para conocer su version de los hechos y motivaciones.' },
+  { accion: 'Dialogo con ambos alumnos', desc: 'Se converso con los alumnos involucrados para mediar y buscar solucion al conflicto.' },
+  { accion: 'Contacto con apoderado', desc: 'Se contacto telefonicamente al apoderado para informar la situacion y coordinar acciones.' },
+  { accion: 'Reunion con apoderado', desc: 'Apoderado asistio al colegio para reunion presencial. Se informaron medidas y se firmo compromiso.' },
+  { accion: 'Mediacion escolar', desc: 'Orientador realizo sesion de mediacion donde los alumnos dialogaron y acordaron compromisos.' },
+  { accion: 'Derivacion a orientacion', desc: 'Se derivo al alumno a orientacion para evaluacion y acompañamiento psicosocial.' },
+  { accion: 'Seguimiento semanal', desc: 'Se realizo seguimiento durante la semana observando mejoria en la conducta del alumno.' },
+  { accion: 'Cierre del caso', desc: 'Tras periodo de observacion sin nuevos incidentes, se cierra el caso con resultado positivo.' },
+  { accion: 'Aplicacion de medida disciplinaria', desc: 'Se aplico medida disciplinaria segun reglamento interno. Se informo a apoderado.' },
+  { accion: 'Sesion de reparacion', desc: 'Se realizo sesion supervisada donde el alumno ofrecio disculpas y se comprometio a mejorar.' },
+  { accion: 'Recopilacion de testimonios', desc: 'Se entrevisto a testigos presenciales para documentar los hechos con mayor precision.' },
+];
 
+const evoluciones = ['Sin cambios','Mejorando','Empeorando','En progreso','Resuelto'];
+
+function generarFecha(mes, maxDia) {
+  const dia = Math.floor(Math.random() * maxDia) + 1;
+  return `2026-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+}
+
+function sumarDias(fecha, dias) {
+  const d = new Date(fecha);
+  d.setDate(d.getDate() + dias);
+  if (d > new Date('2026-12-28')) return '2026-12-28';
+  return d.toISOString().slice(0, 10);
+}
+
+function generarSeguimientos(fecha, estado) {
+  const segs = [];
+  const numSegs = estado === 'Cerrado' ? 3 + Math.floor(Math.random() * 3)
+    : estado === 'En seguimiento' ? 2 + Math.floor(Math.random() * 3)
+    : Math.floor(Math.random() * 2);
+
+  let fechaSeg = fecha;
+  for (let i = 0; i < numSegs; i++) {
+    const seg = accionesSeg[Math.min(i, accionesSeg.length - 1)];
+    const isLast = i === numSegs - 1;
+    let evol;
+    if (estado === 'Cerrado' && isLast) evol = 'Resuelto';
+    else if (i === 0) evol = 'Sin cambios';
+    else evol = pick(['Mejorando','Sin cambios','En progreso']);
+
+    segs.push({
+      accion: accionesSeg[i % accionesSeg.length].accion,
+      descripcion: accionesSeg[i % accionesSeg.length].desc,
+      evolucionCaso: evol,
+      fecha: fechaSeg
+    });
+    fechaSeg = sumarDias(fechaSeg, 1 + Math.floor(Math.random() * 5));
+  }
+  return segs;
+}
+
+function generarParticipantes(numAlumnos) {
+  const alumnos = pickN(ALUMNOS, numAlumnos);
+  return alumnos.map((id, i) => ({
+    alumnoInstitucionalId: id,
+    rolEnIncidente: i === 0 ? pick(['Agresor','Involucrado']) : i === 1 ? 'Victima' : pick(['Testigo','Involucrado'])
+  }));
+}
+
+// Distribución de incidentes por mes (enero a diciembre)
+const distribucion = [
+  { mes: 1, cantidad: 3, maxDia: 28 },
+  { mes: 2, cantidad: 4, maxDia: 28 },
+  { mes: 3, cantidad: 6, maxDia: 28 },
+  { mes: 4, cantidad: 8, maxDia: 28 },
+  { mes: 5, cantidad: 12, maxDia: 28 },
+  { mes: 6, cantidad: 10, maxDia: 25 },
+  { mes: 7, cantidad: 5, maxDia: 28 },
+  { mes: 8, cantidad: 7, maxDia: 28 },
+  { mes: 9, cantidad: 9, maxDia: 28 },
+  { mes: 10, cantidad: 11, maxDia: 28 },
+  { mes: 11, cantidad: 8, maxDia: 28 },
+  { mes: 12, cantidad: 4, maxDia: 20 },
+];
+
+const incidentes = [];
+
+for (const { mes, cantidad, maxDia } of distribucion) {
+  for (let i = 0; i < cantidad; i++) {
+    const plantilla = plantillas[Math.floor(Math.random() * plantillas.length)];
+    const fecha = generarFecha(mes, maxDia);
+    const estado = mes <= 6 ? 'Cerrado'
+      : mes <= 9 ? pick(['Cerrado','Cerrado','En seguimiento'])
+      : mes <= 11 ? pick(['Cerrado','En seguimiento','En seguimiento','Abierto'])
+      : pick(['Abierto','Abierto','En seguimiento','En seguimiento','Cerrado']);
+
+    incidentes.push({
+      titulo: plantilla.titulo,
+      fecha,
+      descripcion: plantilla.desc,
+      gravedad: plantilla.gravedad,
+      funcionarioResponsableId: pick(FUNCIONARIOS),
+      participantes: generarParticipantes(1 + Math.floor(Math.random() * 3)),
+      estado,
+      seguimientos: generarSeguimientos(fecha, estado)
+    });
+  }
+}
+
+// Ordenar cronológicamente
+incidentes.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+async function limpiarBaseDeDatos() {
+  console.log('=== LIMPIANDO BASE DE DATOS ===\n');
+  const supabase = crearClienteSupabase();
+  const tablas = ['notificaciones', 'auditorias', 'seguimientos', 'incidente_participantes', 'incidentes'];
+  for (const tabla of tablas) {
+    const { error } = await supabase.from(tabla).delete().neq('id', '');
+    if (error) console.log(`  ❌ Error limpiando ${tabla}: ${error.message}`);
+    else console.log(`  ✅ ${tabla} limpiada`);
+  }
+  console.log('');
+}
+
+function crearId(prefijo, fecha) {
+  if (prefijo === 'INC') {
+    const d = new Date(fecha);
+    const yyyymmdd = d.getFullYear().toString()
+      + String(d.getMonth() + 1).padStart(2, '0')
+      + String(d.getDate()).padStart(2, '0');
+    return `${prefijo}-${yyyymmdd}-${randomUUID().slice(0, 6)}`;
+  }
+  return `${prefijo}-${randomUUID().slice(0, 8)}`;
+}
+
+async function seed() {
+  const supabase = crearClienteSupabase();
+  await limpiarBaseDeDatos();
+  console.log('=== INICIANDO SEED (insercion directa Supabase) ===\n');
+  console.log(`Total de incidentes a crear: ${incidentes.length}\n`);
+
+  const DIRECTOR_ID = 'FUN-3009';
   let totalIncidentes = 0;
   let totalSeguimientos = 0;
+  let totalNotificaciones = 0;
   let errores = 0;
 
   for (const inc of incidentes) {
     try {
       const seguimientos = inc.seguimientos || [];
-      delete inc.seguimientos;
+      const incidenteId = crearId('INC', inc.fecha);
 
-      // Crear incidente
-      const resIncidente = await fetch(`${API_URL}/incidentes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(inc)
+      // Insertar incidente
+      const { error: errInc } = await supabase.from('incidentes').insert({
+        id: incidenteId,
+        titulo: inc.titulo,
+        fecha: `${inc.fecha}T10:00:00Z`,
+        descripcion: inc.descripcion,
+        gravedad: inc.gravedad,
+        estado: inc.estado,
+        funcionario_responsable_id: inc.funcionarioResponsableId,
+        creado_en: new Date().toISOString(),
       });
 
-      if (!resIncidente.ok) {
-        const err = await resIncidente.json().catch(() => ({}));
-        console.log(`❌ Error creando "${inc.titulo}": ${err.mensaje || resIncidente.status}`);
+      if (errInc) {
+        console.log(`❌ Error "${inc.titulo}": ${errInc.message}`);
         errores++;
         continue;
       }
 
-      const dataIncidente = await resIncidente.json();
-      const incidenteId = dataIncidente.data.id;
-      console.log(`✅ Incidente creado: ${inc.titulo} (${incidenteId}) - Estado: ${inc.estado}`);
-      totalIncidentes++;
-
-      // Actualizar estado si no es "Abierto"
-      if (inc.estado !== 'Abierto') {
-        await fetch(`${API_URL}/incidentes/${incidenteId}/estado`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-funcionario-id': inc.funcionarioResponsableId
-          },
-          body: JSON.stringify({ estado: inc.estado })
+      // Insertar participantes
+      for (const p of inc.participantes) {
+        const { error: errPar } = await supabase.from('incidente_participantes').insert({
+          id: crearId('PAR'),
+          incidente_id: incidenteId,
+          alumno_institucional_id: p.alumnoInstitucionalId,
+          rol_en_incidente: p.rolEnIncidente,
         });
-      }
-
-      // Crear seguimientos
-      for (const seg of seguimientos) {
-        const resSeg = await fetch(`${API_URL}/incidentes/${incidenteId}/seguimientos`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-funcionario-id': inc.funcionarioResponsableId
-          },
-          body: JSON.stringify(seg)
-        });
-
-        if (resSeg.ok) {
-          totalSeguimientos++;
-          console.log(`   📝 Seguimiento: ${seg.accion}`);
-        } else {
-          const err = await resSeg.json().catch(() => ({}));
-          console.log(`   ❌ Error en seguimiento: ${err.error || resSeg.status}`);
+        if (errPar) {
+          console.log(`   ❌ Participante error: ${errPar.message}`);
           errores++;
         }
       }
 
-      console.log('');
+      // Insertar seguimientos
+      for (const seg of seguimientos) {
+        const { error: errSeg } = await supabase.from('seguimientos').insert({
+          id: crearId('SEG'),
+          incidente_id: incidenteId,
+          accion: seg.accion,
+          evolucion_caso: seg.evolucionCaso,
+          fecha: `${seg.fecha}T10:00:00Z`,
+          funcionario_responsable_id: inc.funcionarioResponsableId,
+        });
+        if (errSeg) {
+          console.log(`   ❌ Seg error: ${errSeg.message}`);
+          errores++;
+        } else {
+          totalSeguimientos++;
+        }
+      }
+
+      // Insertar notificacion para director si es grave
+      if (inc.gravedad === 'Grave') {
+        const { error: errNot } = await supabase.from('notificaciones').insert({
+          id: crearId('NOT'),
+          titulo: `Incidente grave: ${inc.titulo}`,
+          incidente_id: incidenteId,
+          fecha_creacion: `${inc.fecha}T10:00:00Z`,
+          leida: false,
+          destinatario_id: DIRECTOR_ID,
+        });
+        if (!errNot) totalNotificaciones++;
+      }
+
+      console.log(`✅ ${inc.fecha} | ${inc.titulo} (${inc.gravedad}) → ${inc.estado}`);
+      totalIncidentes++;
     } catch (error) {
-      console.log(`❌ Error procesando "${inc.titulo}": ${error.message}`);
+      console.log(`❌ Error: ${error.message}`);
       errores++;
     }
   }
@@ -523,11 +263,19 @@ async function seed() {
   console.log('\n=== RESUMEN ===');
   console.log(`Incidentes creados: ${totalIncidentes}`);
   console.log(`Seguimientos creados: ${totalSeguimientos}`);
+  console.log(`Notificaciones creadas: ${totalNotificaciones}`);
   console.log(`Errores: ${errores}`);
-  console.log('\nDistribucion por estado:');
-  console.log(`  • Cerrados: ${incidentes.filter(i => i.estado === 'Cerrado').length}`);
-  console.log(`  • En seguimiento: ${incidentes.filter(i => i.estado === 'En seguimiento').length}`);
-  console.log(`  • Abiertos: ${incidentes.filter(i => i.estado === 'Abierto').length}`);
+
+  const porMes = {};
+  incidentes.forEach(i => {
+    const m = parseInt(i.fecha.split('-')[1]);
+    porMes[m] = (porMes[m] || 0) + 1;
+  });
+  const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  console.log('\nDistribucion por mes:');
+  Object.entries(porMes).sort((a,b) => a[0]-b[0]).forEach(([m, n]) => {
+    console.log(`  ${MESES[m]}: ${n}`);
+  });
 }
 
 seed();

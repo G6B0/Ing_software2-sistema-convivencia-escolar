@@ -139,12 +139,12 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
     <div style={{ width: 224, background: '#001f5b', display: 'flex', flexDirection: 'column', color: '#fff', flexShrink: 0, minHeight: '100vh', position: 'relative' }}>
       <div style={{ padding: '22px 18px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <i className="bi bi-shield-check" style={{ fontSize: 20 }} />
+          <div style={{ width: 55, height: 55, flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/EscudoUdec.png" alt="Escudo Colegio UdeC" style={{ width: 95, height: 95, objectFit: 'contain' }} />
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 800 }}>Colegio UdeC</div>
-            <div style={{ fontSize: 10, color: '#93c5fd', marginTop: 1 }}>Sistema de Incidencias</div>
+            <div style={{ fontSize: 10, color: '#93c5fd', marginTop: 1, whiteSpace: 'nowrap' }}>Sistema de Incidencias</div>
           </div>
         </div>
       </div>
