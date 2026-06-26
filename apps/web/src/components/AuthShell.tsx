@@ -145,7 +145,7 @@ export default function AuthShell({ children }: AuthShellProps) {
   }
 
   if (!sesion) {
-    return <>{children}</>;
+    return pathname === '/login' ? <>{children}</> : null;
   }
 
   if (pathname === '/login') {
