@@ -302,7 +302,7 @@ class ServicioIncidentes {
       identificadorRelacionado: incidenteId,
     })
 
-    return incidenteActualizado
+    return this.consultarIncidentePorId(incidenteId)
   }
 
   async obtenerHistorialSeguimientos(incidenteId, funcionarioSesionId) {
