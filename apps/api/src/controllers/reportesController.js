@@ -16,7 +16,7 @@ async function obtenerDashboard(req, res) {
 
     const graves = incidentes.filter((i) => i.gravedad === 'Grave').length
 
-    const enSeguimiento = incidentes.filter((i) => i.estado === 'Reabierto').length
+    const enSeguimiento = incidentes.filter((i) => i.estado === 'En seguimiento').length
 
     // Alumnos reincidentes: alumnos que aparecen en más de 1 incidente
     const alumnosPorIncidente = {}
@@ -72,7 +72,7 @@ async function obtenerDashboard(req, res) {
       .slice(0, 5)
 
     // Evolución mensual (últimos 6 meses)
-    const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
     const mesMap = {}
     incidentes.forEach((i) => {
       const fecha = new Date(i.fecha)
@@ -139,10 +139,7 @@ async function obtenerReporteMensual(req, res) {
 
     const incidentes = await servicioIncidentes.listarIncidentes()
 
-    const MESES = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-    ]
+    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
     const anioActual = new Date().getFullYear()
 

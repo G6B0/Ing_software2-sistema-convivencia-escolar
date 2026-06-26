@@ -10,6 +10,8 @@ interface StatCardProps {
   delta?: number | null; // <--- NUEVA PROP (T11)
 }
 
+const hoverClass = 'stat-card-interactive';
+
 export default function StatCard({ label, value, sub, icon, color = '#003087', onClick, delta }: StatCardProps) {
   const baseStyle: React.CSSProperties = {
     background: '#fff',
@@ -17,7 +19,7 @@ export default function StatCard({ label, value, sub, icon, color = '#003087', o
     padding: '20px 22px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
     border: '1px solid #e2e8f0',
-    ...(onClick ? { cursor: 'pointer', width: '100%', textAlign: 'left' } : {}),
+    ...(onClick ? { cursor: 'pointer', transition: 'box-shadow 0.2s ease', width: '100%', textAlign: 'left' } : {}),
   };
 
   // Función para renderizar el indicador visual (Cumple T2.1 a T2.6)
@@ -42,6 +44,13 @@ export default function StatCard({ label, value, sub, icon, color = '#003087', o
 
   const content = (
     <>
+      {onClick && (
+        <style>{`
+          .${hoverClass}:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
+          }
+        `}</style>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>{label}</span>
         {icon && (
@@ -63,7 +72,7 @@ export default function StatCard({ label, value, sub, icon, color = '#003087', o
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} style={baseStyle}>
+      <button type="button" onClick={onClick} className={hoverClass} style={baseStyle}>
         {content}
       </button>
     );

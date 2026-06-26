@@ -2,8 +2,10 @@
 
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
+import dynamic from 'next/dynamic';
 import { canAccessPath, getPermissions } from '@/lib/permissions';
+
+const Sidebar = dynamic(() => import('@/components/Sidebar'), { ssr: false });
 import {
   apiFetch,
   getStoredSession,
